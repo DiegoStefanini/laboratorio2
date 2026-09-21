@@ -81,7 +81,7 @@
 #v(1cm)
 #outline()
 
-= Il terminale e il filesystem #text(10pt, weight: "regular")[(lezione 1)]
+= Il terminale e il filesystem #text(10pt, weight: "regular")[(lezioni 1-2)]
 
 == Terminale e shell
 
@@ -104,15 +104,15 @@ hello.c   appunti.txt
 canvas(length: 0.8cm, {
   import draw: *
   tree.tree(
-    ([`/`], ([`home`], ([`studente`], ([*`lab2`*], [`hello.c`], [`appunti.txt`], [`esercizi/`])))),
-    spread: 1.9, grow: 1.1,
+    ([`/`], ([`home`], ([`studente`], ([*`lab2`*], [`hello.c`], [`appunti.txt`], [`esercizi/`]))), [`etc`], [`usr`]),
+    spread: 1.7, grow: 1.1,
     draw-node: (node, ..) => {
       let t = node.content
       content((), box(inset: 3pt, radius: 2pt, fill: if repr(t).contains("lab2") { rgb("#fff3c4") } else { white }, t))
     })
 }),
 [
-  Parte da `/`, la *root*. Ogni directory contiene file e altre directory; `/` separa un livello dal successivo.
+  Il filesystem è un *albero*. Parte da `/`, la *root*: ogni file o directory si raggiunge con un *percorso*. `/` separa un livello dal successivo.
 
   File e directory sono oggetti diversi ma stanno nello stesso spazio dei nomi.
 
@@ -136,13 +136,13 @@ canvas(length: 0.8cm, {
 === Percorsi assoluti e relativi
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
-[*Relativo*: parte dalla directory corrente.
+[*Relativo*: parte dalla directory corrente (es. `esercizi/es1.c`).
 ```sh
 $ cd esercizi
 $ pwd
 /home/studente/lab2/esercizi
 ```],
-[*Assoluto*: parte dalla root `/`.
+[*Assoluto*: parte dalla root `/` (es. `/home/studente/lab2`).
 ```sh
 $ cd /home/studente
 $ pwd
@@ -156,6 +156,25 @@ $ cd ..          # vado nel padre
 $ pwd
 /home/studente
 ```
+
+=== La home e i file nascosti
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[`~` = la *home* dell'utente corrente. `cd` senza argomenti porta di solito lì.
+```sh
+$ cd ~
+$ pwd
+/home/studente
+```],
+[Un nome che inizia con `.` è *nascosto*: `ls` non lo mostra, `ls -a` sì.
+```sh
+$ ls
+appunti.txt  hello.c
+$ ls -a
+.  ..  .bashrc  appunti.txt  hello.c
+```])
+
+#nota["Nascosto" è solo una *convenzione sul nome*, non un tipo speciale di file.]
 
 === Leggere `ls -l`
 
@@ -187,6 +206,17 @@ $ pwd
 }))
 
 Le *opzioni* modificano il comportamento del comando. Se non ricordi come si usa: `gcc --help` (sintesi rapida) oppure `man gcc` (manuale UNIX).
+
+=== Chi riceve gli argomenti?
+
+La shell *spezza la riga in parole usando gli spazi* e avvia il programma passandogli gli argomenti. Se un nome contiene spazi, le *virgolette* lo tengono insieme come un solo argomento:
+
+```sh
+$ touch "appunti lezione.txt"     # un file, non due
+$ cat "appunti lezione.txt"
+```
+
+#nota[Vedremo come un programma C legge questi argomenti con `argc` e `argv`, i parametri di `main`.]
 
 = Dal sorgente al programma #text(10pt, weight: "regular")[(lezione 1)]
 
@@ -362,19 +392,32 @@ Lezione 1
 2 * 21 = 42
 ```)
 
-= File, metadati e redirezione #text(10pt, weight: "regular")[(lezione 2)]
+= Lavorare con i file #text(10pt, weight: "regular")[(lezione 2, slide L02)]
 
-== `touch` e i metadati temporali
+== Creare: `mkdir` e `touch`
 
-`touch`: se il file non esiste lo crea, se esiste ne aggiorna la data di modifica. `stat` mostra le informazioni su un file, tra cui i tre tempi:
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```sh
+$ mkdir esercizi     # argomento = nome
+$ touch appunti.txt  # file vuoto
+```,
+[`touch` in realtà nasce per *cambiare i timestamp* di un file. Se il file non esiste lo crea: la creazione è una conseguenza utile, non lo scopo.])
+
+== I timestamp
+
+Per ogni file UNIX tiene tre marcature temporali. `stat file` le mostra, insieme agli altri metadati.
 
 #table(
   columns: (auto, 1fr),
   [Metadato], [Significato],
-  [`atime`], [_access time_: ultimo accesso al file],
+  [`atime`], [_access time_: ultimo accesso al *contenuto*],
   [`mtime`], [_modification time_: ultima modifica del *contenuto*],
   [`ctime`], [_change time_: ultima modifica dei *metadati*],
 )
+
+#nota[`ctime` vuol dire *change* time, *non* "creation time". Alcuni filesystem moderni salvano anche il tempo di creazione (_birth time_), ma non fa parte dei tre timestamp UNIX classici.]
+
+*A cosa servono*: backup incrementali, sincronizzazione, diagnostica, cercare i file modificati di recente, e ricompilare solo ciò che è cambiato. `make` (lo vedremo più avanti) confronta i timestamp per decidere se ricompilare.
 
 Chi aggiorna cosa (✓ = portato all'ora corrente):
 
@@ -383,28 +426,36 @@ Chi aggiorna cosa (✓ = portato all'ora corrente):
 #align(center, table(columns: 4, align: center,
   [Operazione], [`atime`], [`mtime`], [`ctime`],
   [`touch file`], si, si, [#si #text(8pt)[(cambiare i tempi è già \ una modifica dei metadati)]],
+  [`touch -a file`], si, no, si,
+  [`touch -m file`], no, si, si,
   [`cp`: destinazione], [#si #text(8pt)[solo se creato]], si, si,
   [`cp -p`: destinazione], text(8pt)[copiato dal sorgente], text(8pt)[copiato dal sorgente], si,
   [`cp`: sorgente], [#si #text(8pt)[può, per la lettura]], no, no,
 ))
 
-== Copia, spostamento, cancellazione
+== Copiare, spostare, cancellare
 
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[*`cp sorgente destinazione`* (_copy_): l'originale resta al suo posto.
 ```sh
-cp /tmp/ciao.txt ~/hello.txt   # copia ciao.txt da /tmp nella home, rinominandolo hello.txt
-```
+$ cp hello.c copia.c
+$ cp /tmp/ciao.txt ~/hello.txt   # copia e rinomina
+```],
+[*`mv`* (_move_): un comando, *due usi*.
+```sh
+$ mv copia.c esempio.c      # rinomina
+$ mv esempio.c esercizi/    # sposta
+```])
 
-#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+#block(breakable: false, grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
 canvas(length: 0.55cm, {
   import draw: *
-  // copia: legge tutti i byte
-  content((0, 3), text(8pt)[*copia* — $O(N)$])
+  content((0, 3), anchor: "west", text(8pt)[*copia* — $O(N)$])
   for k in range(6) { rect((k * 0.6, 1.8), (k * 0.6 + 0.6, 2.4), fill: rgb("#eef4ff")) }
   line((3.8, 2.1), (5.2, 2.1), mark: (end: "stealth"))
   for k in range(6) { rect((5.4 + k * 0.6, 1.8), (6 + k * 0.6, 2.4), fill: rgb("#eef4ff")) }
   content((4.5, 1.3), text(7pt)[legge e riscrive ogni byte])
-  // spostamento: solo il percorso
-  content((0, 0), text(8pt)[*sposta* (stesso filesystem) — $O(1)$])
+  content((0, 0), anchor: "west", text(8pt)[*sposta* (stesso filesystem) — $O(1)$])
   for k in range(6) { rect((k * 0.6, -1.2), (k * 0.6 + 0.6, -0.6), fill: rgb("#eef4ff")) }
   content((3.9, -0.9), anchor: "west", text(8pt)[cambia solo il *percorso* nei metadati])
 }),
@@ -413,65 +464,140 @@ table(columns: (auto, auto),
   [copia], [$O(N)$],
   [sposta, stesso filesystem], [$O(1)$],
   [sposta, altro filesystem], [$O(N)$: copia + cancella],
-))
+)))
 
 #table(
   columns: (auto, 1fr),
   [Comando], [Descrizione],
-  [`rm`], [cancella un file],
+  [`rm`], [cancella un file (_remove_)],
   [`rmdir`], [cancella una directory *vuota*],
-  [`rm -r`], [cancella una directory con tutto il contenuto (file e sottodirectory)],
-  [`cat`], [stampa il contenuto di un file su stdout],
-  [`less`], [come `cat`, ma si scorre avanti e indietro e si cerca],
-  [`head` / `tail`], [prime / ultime 10 righe. `head -n 5 file.txt` = prime 5],
+  [`rm -r`], [cancella una directory con tutto il contenuto. `-r` = *ricorsivamente*: attraversa tutto ciò che c'è dentro],
+)
+
+#nota[`rm` *non* sposta nel cestino: da terminale la cancellazione è in genere *definitiva*.]
+
+== Guardare dentro i file
+
+Non serve sempre un editor:
+
+#table(
+  columns: (auto, 1fr),
+  [Comando], [Descrizione],
+  [`cat`], [scrive tutto il contenuto del file su stdout],
+  [`less`], [per file lunghi: si scorre avanti e indietro e si cerca, senza riversare tutto sul terminale. *`q` per uscire*],
+  [`head` / `tail`], [prime / ultime 10 righe. `head -n 5 dati.txt` = prime 5],
 )
 
 == Wildcard: le espande la shell
 
-- `*` = qualsiasi sequenza di caratteri: `*.txt` = tutti i file che finiscono in `.txt`
-- `?` = *un solo* carattere qualsiasi: `prova?.txt` va bene per `prova1.txt`, `provaA.txt`
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[- `*` = *zero o più* caratteri qualsiasi
+ - `?` = *esattamente un* carattere],
+```sh
+$ ls *.c
+hello.c  main.c  prova.c
+$ ls prova?.c
+prova1.c  prova2.c  provaA.c
+```)
 
 #align(center, canvas(length: 0.6cm, {
   import draw: *
-  content((0, 0), box(inset: 5pt, stroke: 0.6pt)[`ls *.txt`])
-  line((2, 0), (5, 0), mark: (end: "stealth")); content((3.5, 0.7), text(8pt, fill: blu)[la shell espande])
-  content((7.8, 0), box(inset: 5pt, stroke: 0.6pt, fill: rgb("#eef4ff"))[`ls a.txt b.txt`])
-  line((10.6, 0), (12.4, 0), mark: (end: "stealth"))
-  content((13.4, 0), box(inset: 5pt, stroke: 0.6pt, fill: rgb("#fff3c4"))[`ls`])
-  content((7, -1.1), text(8pt, fill: gray)[nella directory: `a.txt`, `b.txt`, `c.c`. `ls` non vede mai l'asterisco])
+  content((0, 0), box(inset: 5pt, stroke: 0.6pt)[`ls *.c`])
+  line((1.8, 0), (4.4, 0), mark: (end: "stealth")); content((3.1, 0.7), text(8pt, fill: blu)[la shell espande])
+  content((4.6, 0), anchor: "west", box(inset: 5pt, stroke: 0.6pt, fill: rgb("#eef4ff"))[`ls hello.c main.c prova.c`])
+  line((13.4, 0), (14.8, 0), mark: (end: "stealth"))
+  content((15.6, 0), box(inset: 5pt, stroke: 0.6pt, fill: rgb("#fff3c4"))[`ls`])
+  content((7, -1.1), text(8pt, fill: gray)[l'espansione avviene *prima* che `ls` parta: `ls` non vede mai l'asterisco])
 }))
 
-== Redirezione e pipe
+= Flussi: redirezione e pipe #text(10pt, weight: "regular")[(lezione 2, slide L02)]
 
-Ogni programma legge dallo *standard input* (di solito la tastiera) e scrive sullo *standard output* (di solito lo schermo). La shell può ricollegarli:
+== I tre flussi standard
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+table(columns: 3,
+  [n.], [Flusso], [Di solito],
+  [0], [`stdin` — standard input], [dalla tastiera],
+  [1], [`stdout` — standard output], [sul terminale],
+  [2], [`stderr` — standard error], [sul terminale],
+),
+canvas(length: 0.6cm, {
+  import draw: *
+  rect((0, -1), (4, 1), radius: 0.2, fill: rgb("#eef4ff"), stroke: 1pt + blu)
+  content((2, 0), [programma])
+  line((-2.5, 0), (-0.1, 0), mark: (end: "stealth")); content((-1.3, 0.45), text(8pt)[0 stdin])
+  line((4.1, 0.4), (6.5, 0.4), mark: (end: "stealth")); content((5.3, 0.85), text(8pt)[1 stdout])
+  line((4.1, -0.4), (6.5, -0.4), mark: (end: "stealth"), stroke: red); content((5.3, -0.85), text(8pt, fill: red)[2 stderr])
+}))
+
+La shell può collegare ciascun flusso a qualcosa di diverso dal terminale.
+
+== Redirezioni
 
 #align(center, grid(columns: 2, gutter: 1.5em, row-gutter: 1.2em,
   flusso([tastiera], `ls`, [`elenco.txt`], etichetta: [`ls > elenco.txt` — crea o *sovrascrive*]),
-  flusso([tastiera], `echo ...`, [`log.txt` + riga], etichetta: [`echo "..." >> log.txt` — *aggiunge* in fondo]),
-  flusso([`dati.txt`], `programma`, [schermo], etichetta: [`programma < dati.txt` — legge dal file]),
-  canvas(length: 0.6cm, {
-    import draw: *
-    content((0, 0), box(inset: 7pt, stroke: 1pt + blu, fill: rgb("#eef4ff"), radius: 3pt, text(9pt)[`ls *.c`]))
-    line((1.6, 0), (3.6, 0), mark: (end: "stealth"), stroke: 1.5pt + red); content((2.6, 0.5), text(10pt, fill: red)[`|`])
-    content((5.2, 0), box(inset: 7pt, stroke: 1pt + blu, fill: rgb("#eef4ff"), radius: 3pt, text(9pt)[`wc -l`]))
-    line((6.8, 0), (8.3, 0), mark: (end: "stealth"))
-    content((9.6, 0), box(inset: 5pt, stroke: 0.6pt, fill: rgb("#fff3c4"), text(9pt)[`3`]))
-    content((4.8, -1), text(8pt, fill: gray)[pipe: l'output di uno è l'input dell'altro, senza file in mezzo])
-  }),
+  flusso([tastiera], `echo ...`, [`log.txt` + riga], etichetta: [`echo "..." >> log.txt` — *aggiunge* in fondo (_append_)]),
+  flusso([`dati.txt`], `programma`, [schermo], etichetta: [`programma < dati.txt` — stdin dal file]),
+  flusso([tastiera], `gcc errore.c`, text(fill: red)[`errori.txt`], etichetta: [`gcc errore.c 2> errori.txt` — solo *stderr*]),
 ))
 
 ```sh
+$ ls > elenco.txt                 # sul terminale non compare niente
+$ cat elenco.txt
+hello.c
 $ echo "prima riga" > log.txt
 $ echo "seconda riga" >> log.txt
 $ cat log.txt
 prima riga
 seconda riga
-$ ls | less        # scorro l'elenco dei file
-$ ls *.c | wc -l   # quanti file .c ci sono (wc -l conta le righe)
 ```
 
-== Chi riceve gli argomenti?
+#nota[Con `<` il programma continua a leggere da stdin: è *la shell* che ha collegato stdin al file, il programma non se ne accorge. \
+`2>` redirige il file descriptor 2. Si separa stderr da stdout perché output normale ed errori hanno significati diversi e spesso si trattano in modo diverso.]
 
-La shell spezza la riga in parole e avvia il programma passandogli gli argomenti.
+== La pipe `|`
 
-#nota[Vedremo come un programma C legge questi argomenti con `argc` e `argv`, i parametri di `main`.]
+Collega lo *stdout del primo* comando allo *stdin del secondo*.
+
+#align(center, canvas(length: 0.6cm, {
+  import draw: *
+  content((0, 0), box(inset: 7pt, stroke: 1pt + blu, fill: rgb("#eef4ff"), radius: 3pt, text(9pt)[`ls *.c`]))
+  line((1.7, 0), (3.6, 0), mark: (end: "stealth"), stroke: 1.5pt + red); content((2.65, 0.5), text(10pt, fill: red)[`|`])
+  content((5.2, 0), box(inset: 7pt, stroke: 1pt + blu, fill: rgb("#eef4ff"), radius: 3pt, text(9pt)[`wc -l`]))
+  line((6.8, 0), (8.3, 0), mark: (end: "stealth"))
+  content((9.4, 0), box(inset: 5pt, stroke: 0.6pt, fill: rgb("#fff3c4"), text(9pt)[`3`]))
+  content((0, -1.1), text(7pt)[1. la shell espande `*.c`])
+  content((0, -1.6), text(7pt)[2. `ls` produce l'elenco])
+  content((6.6, -1.1), text(7pt)[3. la pipe lo passa a `wc`])
+  content((6.6, -1.6), text(7pt)[4. `wc -l` conta le righe])
+}))
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[*Con un file temporaneo*
+```sh
+$ ls > tmp.txt
+$ wc -l < tmp.txt
+```],
+[*Con la pipe*: niente file in mezzo
+```sh
+$ ls | wc -l
+$ ls | less      # scorro l'elenco
+```])
+
+#nota[*Idea UNIX*: piccoli programmi che si combinano per costruire operazioni più complesse.]
+
+#block(breakable: false)[
+== Micro-esercizio
+
+Partendo dalla home: creare `lezione02`, entrarci, creare `a.c`, `b.c`, `note.txt` vuoti, salvare l'elenco dei soli `.c` in `sorgenti.txt`, aggiungerlo a `note.txt`, contare le righe di `note.txt`.
+
+```sh
+$ mkdir lezione02
+$ cd lezione02
+$ touch a.c b.c note.txt
+$ ls *.c > sorgenti.txt
+$ cat sorgenti.txt >> note.txt
+$ wc -l < note.txt
+2
+```
+]

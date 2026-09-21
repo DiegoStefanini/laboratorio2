@@ -15,4 +15,10 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 | Lezione | Materiale (`slide/`) | Grezzo | Argomento |
 |---|---|---|---|
 | 1 | `L01_intro_e_ambiente.pdf` (92 slide) | `lezioni/first.c` | terminale, filesystem, comandi base, compilazione, primo programma C, printf |
-| 2 | — (slide non caricate) | `lezioni/seconda.c` | touch e metadati, cp/mv/rm, cat/less/head/tail, wildcard, redirezione, pipe |
+| 2 | `L02_UNIX_base.pdf` (60 slide) | `lezioni/seconda.c` | ~ e file nascosti, touch e timestamp, cp/mv/rm, cat/less/head/tail, wildcard, tre flussi, redirezioni (anche 2>), pipe, argomenti con spazi |
+
+## Capitoli della dispensa (per argomento)
+
+1. Il terminale e il filesystem (lez. 1-2) · 2. Dal sorgente al programma (lez. 1) · 3. Il primo programma C (lez. 1) · 4. Lavorare con i file (lez. 2) · 5. Flussi: redirezione e pipe (lez. 2)
+
+Il grezzo della lezione 2 non aveva errori rispetto alle slide. Il costo O(1)/O(N) di cp/mv e i dettagli di `cp -p` vengono dal grezzo (detti in aula, non nelle slide).
