@@ -79,7 +79,7 @@
   #text(14pt)[Diego Stefanini — prof. Patrizio Dazzi, Luca Ferrucci, a.a. 2026-27]
 ]
 #v(1cm)
-#outline()
+#outline(depth: 2)
 
 = L'ambiente di lavoro: UNIX e primi programmi C
 
