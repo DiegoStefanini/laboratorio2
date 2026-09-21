@@ -19,6 +19,6 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 
 ## Capitoli della dispensa (per argomento)
 
-1. Il terminale e il filesystem (lez. 1-2) · 2. Dal sorgente al programma (lez. 1) · 3. Il primo programma C (lez. 1) · 4. Lavorare con i file (lez. 2) · 5. Flussi: redirezione e pipe (lez. 2)
+Capitolo 1 "L'ambiente di lavoro: UNIX e primi programmi C" (lez. 1-2), con le sezioni: terminale e filesystem · dal sorgente al programma · il primo programma C · lavorare con i file · flussi, redirezione e pipe. Il prossimo capitolo si apre quando il corso passa al linguaggio C vero e proprio (nelle slide L01 i blocchi del semestre sono: Intro → C → Memoria → Strutture).
 
 Il grezzo della lezione 2 non aveva errori rispetto alle slide. Il costo O(1)/O(N) di cp/mv e i dettagli di `cp -p` vengono dal grezzo (detti in aula, non nelle slide).

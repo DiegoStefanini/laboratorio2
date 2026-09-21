@@ -81,9 +81,11 @@
 #v(1cm)
 #outline()
 
-= Il terminale e il filesystem #text(10pt, weight: "regular")[(lezioni 1-2)]
+= L'ambiente di lavoro: UNIX e primi programmi C
 
-== Terminale e shell
+== Il terminale e il filesystem
+
+=== Terminale e shell
 
 #grid(columns: (1fr, 1fr), gutter: 1.5em, align: horizon,
 ```sh
@@ -98,7 +100,7 @@ hello.c   appunti.txt
   - Il *prompt* (`$`) dice che la shell aspetta un comando. Non fa parte del comando e non è sempre `$`.
 ])
 
-== Il filesystem
+=== Il filesystem
 
 #grid(columns: (auto, 1fr), gutter: 1.5em, align: horizon,
 canvas(length: 0.8cm, {
@@ -133,7 +135,7 @@ canvas(length: 0.8cm, {
   [`echo $?`], [restituisce il valore di ritorno dell'ultimo comando eseguito],
 )
 
-=== Percorsi assoluti e relativi
+==== Percorsi assoluti e relativi
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [*Relativo*: parte dalla directory corrente (es. `esercizi/es1.c`).
@@ -157,7 +159,7 @@ $ pwd
 /home/studente
 ```
 
-=== La home e i file nascosti
+==== La home e i file nascosti
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [`~` = la *home* dell'utente corrente. `cd` senza argomenti porta di solito lì.
@@ -176,7 +178,7 @@ $ ls -a
 
 #nota["Nascosto" è solo una *convenzione sul nome*, non un tipo speciale di file.]
 
-=== Leggere `ls -l`
+==== Leggere `ls -l`
 
 #align(center, canvas(length: 1cm, {
   import draw: *
@@ -193,7 +195,7 @@ $ ls -a
   }
 }))
 
-== Com'è fatto un comando
+=== Com'è fatto un comando
 
 #align(center, canvas(length: 1cm, {
   import draw: *
@@ -207,7 +209,7 @@ $ ls -a
 
 Le *opzioni* modificano il comportamento del comando. Se non ricordi come si usa: `gcc --help` (sintesi rapida) oppure `man gcc` (manuale UNIX).
 
-=== Chi riceve gli argomenti?
+==== Chi riceve gli argomenti?
 
 La shell *spezza la riga in parole usando gli spazi* e avvia il programma passandogli gli argomenti. Se un nome contiene spazi, le *virgolette* lo tengono insieme come un solo argomento:
 
@@ -218,9 +220,9 @@ $ cat "appunti lezione.txt"
 
 #nota[Vedremo come un programma C legge questi argomenti con `argc` e `argv`, i parametri di `main`.]
 
-= Dal sorgente al programma #text(10pt, weight: "regular")[(lezione 1)]
+== Dal sorgente al programma
 
-== Il ciclo di lavoro
+=== Il ciclo di lavoro
 
 #grid(columns: (auto, 1fr), gutter: 1.5em, align: horizon,
 canvas(length: 0.9cm, {
@@ -239,7 +241,7 @@ canvas(length: 0.9cm, {
   #nota[*modifica ≠ compilazione ≠ esecuzione.* Se cambi il sorgente e non ricompili, stai eseguendo il vecchio programma.]
 ])
 
-== Compilare ed eseguire
+=== Compilare ed eseguire
 
 C è un linguaggio *compilato*: il sorgente `.c` va trasformato in un file binario prima di poterlo eseguire.
 
@@ -272,7 +274,7 @@ $ echo $?
   [`echo $?`], [stampa il valore restituito dall'ultimo programma. *0 = terminato correttamente*],
 )
 
-== Quando qualcosa va storto
+=== Quando qualcosa va storto
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [
@@ -306,9 +308,9 @@ box(stroke: 0.6pt + verde, inset: 8pt, width: 100%)[*Diagnosi minima*
 
 *Routine utile*: `pwd` → `ls` → `gcc ...` → `./programma`.
 
-= Il primo programma C #text(10pt, weight: "regular")[(lezione 1)]
+== Il primo programma C
 
-== I pezzi
+=== I pezzi
 
 #grid(columns: (1.3fr, 1fr), inset: (x: 6pt, y: 4pt),
   [
@@ -330,7 +332,7 @@ int main(void) {
 
 Le *graffe* `{ }` delimitano un blocco. I commenti (`// fino a fine riga`, `/* su più righe */`) sono per le persone: il compilatore li ignora. Indentazione e nomi sensati non sono obbligatori in C, ma il programma deve essere leggibile.
 
-== Stampare: `puts` e `printf`
+=== Stampare: `puts` e `printf`
 
 #table(columns: (auto, 1fr),
   [Funzione], [Cosa fa],
@@ -340,7 +342,7 @@ Le *graffe* `{ }` delimitano un blocco. I commenti (`// fino a fine riga`, `/* s
 
 #nota[`printf` è una funzione a *numero variabile di parametri*: il primo è la stringa di formato, gli altri i valori da inserire al posto di `%d`, `%s`, …  Il placeholder deve essere compatibile con il tipo del valore.]
 
-=== Dentro un placeholder
+==== Dentro un placeholder
 
 #align(center, canvas(length: 1cm, {
   import draw: *
@@ -368,7 +370,7 @@ Le *graffe* `{ }` delimitano un blocco. I commenti (`// fino a fine riga`, `/* s
   [`%zu`], [size_t], [`%%`], [il carattere %],
 )
 
-== Mettiamo insieme i pezzi
+=== Mettiamo insieme i pezzi
 
 #grid(columns: (1.3fr, 1fr), gutter: 1em, align: horizon,
 ```c
@@ -392,9 +394,9 @@ Lezione 1
 2 * 21 = 42
 ```)
 
-= Lavorare con i file #text(10pt, weight: "regular")[(lezione 2, slide L02)]
+== Lavorare con i file
 
-== Creare: `mkdir` e `touch`
+=== Creare: `mkdir` e `touch`
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 ```sh
@@ -403,7 +405,7 @@ $ touch appunti.txt  # file vuoto
 ```,
 [`touch` in realtà nasce per *cambiare i timestamp* di un file. Se il file non esiste lo crea: la creazione è una conseguenza utile, non lo scopo.])
 
-== I timestamp
+=== I timestamp
 
 Per ogni file UNIX tiene tre marcature temporali. `stat file` le mostra, insieme agli altri metadati.
 
@@ -433,7 +435,7 @@ Chi aggiorna cosa (✓ = portato all'ora corrente):
   [`cp`: sorgente], [#si #text(8pt)[può, per la lettura]], no, no,
 ))
 
-== Copiare, spostare, cancellare
+=== Copiare, spostare, cancellare
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [*`cp sorgente destinazione`* (_copy_): l'originale resta al suo posto.
@@ -476,7 +478,7 @@ table(columns: (auto, auto),
 
 #nota[`rm` *non* sposta nel cestino: da terminale la cancellazione è in genere *definitiva*.]
 
-== Guardare dentro i file
+=== Guardare dentro i file
 
 Non serve sempre un editor:
 
@@ -488,7 +490,7 @@ Non serve sempre un editor:
   [`head` / `tail`], [prime / ultime 10 righe. `head -n 5 dati.txt` = prime 5],
 )
 
-== Wildcard: le espande la shell
+=== Wildcard: le espande la shell
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [- `*` = *zero o più* caratteri qualsiasi
@@ -510,9 +512,9 @@ prova1.c  prova2.c  provaA.c
   content((7, -1.1), text(8pt, fill: gray)[l'espansione avviene *prima* che `ls` parta: `ls` non vede mai l'asterisco])
 }))
 
-= Flussi: redirezione e pipe #text(10pt, weight: "regular")[(lezione 2, slide L02)]
+== Flussi: redirezione e pipe
 
-== I tre flussi standard
+=== I tre flussi standard
 
 #grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
 table(columns: 3,
@@ -532,7 +534,7 @@ canvas(length: 0.6cm, {
 
 La shell può collegare ciascun flusso a qualcosa di diverso dal terminale.
 
-== Redirezioni
+=== Redirezioni
 
 #align(center, grid(columns: 2, gutter: 1.5em, row-gutter: 1.2em,
   flusso([tastiera], `ls`, [`elenco.txt`], etichetta: [`ls > elenco.txt` — crea o *sovrascrive*]),
@@ -555,7 +557,7 @@ seconda riga
 #nota[Con `<` il programma continua a leggere da stdin: è *la shell* che ha collegato stdin al file, il programma non se ne accorge. \
 `2>` redirige il file descriptor 2. Si separa stderr da stdout perché output normale ed errori hanno significati diversi e spesso si trattano in modo diverso.]
 
-== La pipe `|`
+=== La pipe `|`
 
 Collega lo *stdout del primo* comando allo *stdin del secondo*.
 
@@ -587,7 +589,7 @@ $ ls | less      # scorro l'elenco
 #nota[*Idea UNIX*: piccoli programmi che si combinano per costruire operazioni più complesse.]
 
 #block(breakable: false)[
-== Micro-esercizio
+=== Micro-esercizio
 
 Partendo dalla home: creare `lezione02`, entrarci, creare `a.c`, `b.c`, `note.txt` vuoti, salvare l'elenco dei soli `.c` in `sorgenti.txt`, aggiungerlo a `note.txt`, contare le righe di `note.txt`.
 
