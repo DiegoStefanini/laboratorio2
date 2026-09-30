@@ -86,20 +86,16 @@
 
 == Il terminale e il filesystem
 
-Si lavora dal *terminale*: una finestra in cui gira la *shell*, il programma che legge i comandi e li esegue.
+Si lavora dal *terminale*: una finestra in cui gira la *shell* (bash, zsh), il programma che legge i comandi e li esegue.
 
 #grid(columns: (1fr, 1fr), gutter: 1.5em, align: horizon,
 ```sh
 $ pwd
 /home/studente/lab2
 $ ls
-hello.c   appunti.txt
+appunti.txt  esercizi  hello.c
 ```,
-[
-  - *Terminale*: interfaccia testuale per dialogare con il sistema.
-  - *Shell* (bash, zsh): il programma dentro il terminale che interpreta i comandi.
-  - Il *prompt* (`$`) dice che la shell aspetta un comando. Non fa parte del comando e non è sempre `$`.
-])
+[Il *prompt* (`$`) dice che la shell aspetta un comando. Non fa parte del comando e non è sempre `$`.])
 
 I comandi agiscono sul *filesystem*, un albero di directory e file:
 
@@ -115,9 +111,9 @@ canvas(length: 0.8cm, {
     })
 }),
 [
-  Il filesystem è un *albero*. Parte da `/`, la *root*: ogni file o directory si raggiunge con un *percorso*. `/` separa un livello dal successivo.
+  Parte da `/`, la *root*: ogni file o directory si raggiunge con un *percorso*, in cui `/` separa un livello dal successivo.
 
-  File e directory sono oggetti diversi ma stanno nello stesso spazio dei nomi.
+  File e directory sono oggetti diversi, ma nella stessa directory non possono avere lo stesso nome.
 
   In giallo la *directory corrente*.
 
@@ -159,8 +155,6 @@ $ cd ..          # vado nel padre
 $ pwd
 /home/studente
 ```
-
-Due casi speciali: la *home* e i *file nascosti*.
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 [`~` = la *home* dell'utente corrente. `cd` senza argomenti porta di solito lì.
@@ -228,7 +222,7 @@ Per creare directory e file vuoti si usano `mkdir` e `touch`:
 $ mkdir esercizi     # argomento = nome
 $ touch appunti.txt  # file vuoto
 ```,
-[`touch` in realtà nasce per *cambiare i timestamp* di un file. Se il file non esiste lo crea: la creazione è una conseguenza utile, non lo scopo.])
+[`touch` in realtà nasce per *cambiare i timestamp* (gli orari registrati) di un file. Se il file non esiste lo crea: la creazione è una conseguenza utile, non lo scopo.])
 
 Oltre al contenuto, per ogni file UNIX tiene tre marcature temporali (*timestamp*). `stat file` le mostra, insieme agli altri metadati.
 
@@ -301,15 +295,15 @@ table(columns: (auto, auto),
 
 #nota[`rm` *non* sposta nel cestino: da terminale la cancellazione è in genere *definitiva*.]
 
-Per guardare dentro un file non serve sempre un editor:
+#block(breakable: false)[Per guardare dentro un file non serve sempre un editor:
 
 #table(
   columns: (auto, 1fr),
   [Comando], [Descrizione],
-  [`cat`], [scrive tutto il contenuto del file su stdout],
+  [`cat`], [scrive tutto il contenuto del file sul terminale],
   [`less`], [per file lunghi: si scorre avanti e indietro e si cerca, senza riversare tutto sul terminale. *`q` per uscire*],
   [`head` / `tail`], [prime / ultime 10 righe. `head -n 5 dati.txt` = prime 5],
-)
+)]
 
 Per lavorare su molti file insieme ci sono le *wildcard*, che espande la shell:
 
@@ -353,9 +347,7 @@ canvas(length: 0.6cm, {
   line((4.1, -0.4), (6.5, -0.4), mark: (end: "stealth"), stroke: red); content((5.3, -0.85), text(8pt, fill: red)[2 stderr])
 }))
 
-La shell può collegare ciascun flusso a qualcosa di diverso dal terminale.
-
-Le *redirezioni* li collegano a un file invece che a tastiera e schermo:
+La shell può collegare ogni flusso a qualcosa di diverso dal terminale. Le *redirezioni* lo collegano a un file:
 
 #align(center, grid(columns: 2, gutter: 1.5em, row-gutter: 1.2em,
   flusso([tastiera], `ls`, [`elenco.txt`], etichetta: [`ls > elenco.txt` — crea o *sovrascrive*]),
@@ -367,6 +359,9 @@ Le *redirezioni* li collegano a un file invece che a tastiera e schermo:
 ```sh
 $ ls > elenco.txt                 # sul terminale non compare niente
 $ cat elenco.txt
+appunti.txt
+elenco.txt
+esercizi
 hello.c
 $ echo "prima riga" > log.txt
 $ echo "seconda riga" >> log.txt
@@ -375,8 +370,8 @@ prima riga
 seconda riga
 ```
 
-#nota[Con `<` il programma continua a leggere da stdin: è *la shell* che ha collegato stdin al file, il programma non se ne accorge. \
-`2>` redirige il file descriptor 2. Si separa stderr da stdout perché output normale ed errori hanno significati diversi e spesso si trattano in modo diverso.]
+#block(breakable: false, nota[Con `<` il programma continua a leggere da stdin: è *la shell* che ha collegato stdin al file, il programma non se ne accorge. \
+`2>` redirige il file descriptor 2. Si separa stderr da stdout perché output normale ed errori hanno significati diversi e spesso si trattano in modo diverso.])
 
 La *pipe* `|` invece collega lo *stdout del primo* comando allo *stdin del secondo*.
 
@@ -439,8 +434,6 @@ canvas(length: 0.9cm, {
   }
 }),
 [
-  Il programma non nasce nell'editor: nasce da questo ciclo, ripetuto.
-
   #nota[*modifica ≠ compilazione ≠ esecuzione.* Se cambi il sorgente e non ricompili, stai eseguendo il vecchio programma.]
 ])
 
@@ -473,7 +466,7 @@ Il passo centrale è la compilazione. C è un linguaggio *compilato*: il sorgent
 
 #base[codice oggetto e linking][Il codice oggetto è il sorgente già tradotto in linguaggio macchina, ma non ancora eseguibile: gli mancano i pezzi che stanno altrove. Per esempio il codice di `printf` non è nel tuo file, sta nella libreria standard. Il *linker* mette insieme il tuo `.o` e questi pezzi, e ne esce un file che si può eseguire.]
 
-La prima fase lavora solo sul testo. Le direttive vengono eseguite *prima* della compilazione vera e propria: sostituiscono dei nomi simbolici con il contenuto che indicano. Due usi:
+La prima fase lavora solo sul testo: le direttive sostituiscono un nome con il contenuto che indica. Due usi:
 - `#include <stdio.h>` *include un file*: al suo posto viene incollato il contenuto di una libreria come `stdio.h`, o di un altro file come `my_lib.c`;
 - `#define NOME testo` *definisce una macro*: da lì in poi ogni `NOME` viene sostituito con `testo`. Serve per costanti o comandi semplici.
 
@@ -502,7 +495,7 @@ int main(void) {
 
 Le righe in più sono il contenuto di `stdio.h`, incollato dall'`include`. In fondo c'è il nostro `main`, con `CONST_MESSAGE` già sostituita dal suo testo.
 
-Di solito le fasi non si lanciano una per una: `gcc` (_GNU Compiler Collection_, il compilatore più diffuso) fa preprocessing, compilazione e linking con un solo comando.
+Di solito le prime tre fasi si fanno con un solo comando, `gcc` (_GNU Compiler Collection_):
 
 ```sh
 $ gcc hello.c              # se va tutto bene non scrive niente
@@ -547,7 +540,7 @@ pila(larghezza: 3cm,
   ([*stack* \ variabili locali], rgb("#dff2e3")),
 ),
 [
-  Ogni zona ha un compito. Il *codice* contiene le istruzioni del programma. I *dati statici* contengono le variabili globali, lo *stack* quelle locali: la differenza tra le due si vede nella prossima sezione.
+  Variabili globali e locali sono spiegate nella prossima sezione.
 
   #base[stack e heap][Lo *stack* (pila) cresce e si svuota da solo: quando una funzione parte, le sue variabili locali vengono messe in cima; quando finisce, vengono tolte. L'*heap* è la memoria che il programma chiede esplicitamente mentre gira, e che resta finché non la restituisce.]
 ])
@@ -557,6 +550,8 @@ Se qualcosa va storto, l'errore può arrivare in due momenti diversi:
 #block(breakable: false, grid(columns: (1fr, 1fr), gutter: 1em,
 [
 ```c
+#include <stdio.h>
+
 int main(void) {
     puts("Hello, world!")   // manca ;
     return 0;
@@ -572,19 +567,11 @@ table(columns: 2,
   [il programma *non viene costruito*], [l'eseguibile esiste ma *si comporta male* o termina in modo inatteso],
 )))
 
-#grid(columns: (1fr, 1fr), gutter: 1em,
-box(stroke: 0.6pt + red, inset: 8pt, width: 100%)[*3 errori banali che fanno perdere tempo*
-  + essere nella directory sbagliata;
-  + modificare un file e compilarne un altro;
-  + dimenticare di ricompilare.],
-box(stroke: 0.6pt + verde, inset: 8pt, width: 100%)[*Diagnosi minima*
-  + sono nella directory giusta?
-  + il sorgente esiste?
-  + ci sono errori o warning?
-  + l'eseguibile è stato creato?
-  + sto eseguendo quello giusto?])
-
-*Routine utile*: `pwd` → `ls` → `gcc ...` → `./programma`.
+#box(stroke: 0.6pt + verde, inset: 8pt, width: 100%)[*Se non funziona, controlla* (sono gli errori banali che fanno perdere tempo):
+  + sono nella directory giusta? (`pwd`)
+  + il sorgente esiste, ed è quello che ho modificato? (`ls`)
+  + ho ricompilato? ci sono errori o warning?
+  + l'eseguibile è stato creato, e sto eseguendo quello giusto?]
 
 == Com'è fatto un programma C
 
@@ -608,9 +595,7 @@ int main(void) {     // 3. funzioni
   3. *funzioni*: `main` prende niente (`void`) e restituisce un intero (`int`). `return 0` la termina e restituisce 0 al sistema operativo.
 ])
 
-Le *graffe* `{ }` delimitano un blocco. Indentazione e nomi sensati non sono obbligatori, ma il programma deve essere leggibile. Per questo servono i *commenti*: testo racchiuso fra `/*` e `*/` (anche su più righe), oppure da `//` a fine riga. Il compilatore li ignora.
-
-#nota[I commenti sono molto importanti: documenta *sempre* cosa fa un'istruzione, un blocco o una funzione, per ricordartelo quando rileggi.]
+Le *graffe* `{ }` delimitano un blocco. Indentazione e nomi sensati non sono obbligatori, ma il programma deve essere leggibile. Per questo servono i *commenti*: testo racchiuso fra `/*` e `*/` (anche su più righe), oppure da `//` a fine riga. Il compilatore li ignora. Documenta *sempre* cosa fa un'istruzione, un blocco o una funzione: serve quando rileggi.
 
 Per stampare ci sono due funzioni, `puts` e `printf`:
 
@@ -620,7 +605,7 @@ Per stampare ci sono due funzioni, `puts` e `printf`:
   [`printf("Risultato: %d\n", 42);`], [stringa *formattata*: `%d` viene sostituito dal valore. *Non va a capo da sola*: serve `\n`],
 )
 
-#nota[`printf` è una funzione a *numero variabile di parametri*: il primo è la stringa di formato, gli altri i valori da inserire al posto dei _placeholder_ `%d`, `%s`, … Tutti i placeholder sono nella sezione sui tipi.]
+#nota[`printf` è una funzione a *numero variabile di parametri*: il primo è la stringa di formato, gli altri i valori da inserire al posto dei _placeholder_ `%d`, `%s`, …]
 
 Mettendo insieme i pezzi:
 
@@ -835,7 +820,7 @@ Le costanti stringa sono memorizzate come *array di caratteri*, cioè caratteri 
   }
 }))]
 
-Ora che i tipi sono chiari si può completare `printf`: ogni tipo ha il suo placeholder, e *il placeholder deve essere compatibile con il tipo del valore*. Ognuno è fatto così:
+Ogni tipo ha il suo placeholder in `printf`, e *il placeholder deve essere compatibile con il tipo del valore*. Ognuno è fatto così:
 
 #align(center, canvas(length: 1cm, {
   import draw: *
@@ -943,7 +928,7 @@ if (n % 2 == 0) puts("Pari");
 else puts("Dispari");
 ```)
 
-Gli operatori *logici* sono tutti binari tranne `!`. In C *non esiste un tipo booleano primitivo tradizionale*: si usano i numeri. *0 è falso, qualsiasi valore diverso da 0 è vero*. Il risultato di un operatore logico o di confronto è sempre *0 se falso, 1 se vero*:
+Gli operatori *logici* sono tutti binari tranne `!`. In C *non c'è un tipo booleano di base*: si usano i numeri. *0 è falso, qualsiasi valore diverso da 0 è vero*. Il risultato di un operatore logico o di confronto è sempre *0 se falso, 1 se vero*:
 
 #let cv(b) = if b { "1" } else { "0" }
 #align(center, table(columns: 5, align: center,
@@ -1360,7 +1345,7 @@ int main(void) {
 
     printf("Nome: %s, Età: %d\n",
            s.nome, s.eta);
-    printf("Dimensione: %lu\n",
+    printf("Dimensione: %zu\n",
            sizeof(s));
     return 0;
 }
@@ -1383,7 +1368,7 @@ L'ordine dei membri nella definizione è l'ordine in memoria, e lo spazio di una
 ]))
 
 #nota[#set par(justify: false)
-Con l'ordine sbagliato, `{15, "Antonio"}`, il programma stampa `Nome: T, Età: 0`. Il compilatore avvisa: `incompatible pointer to integer conversion`.]
+Con l'ordine sbagliato, `{15, "Antonio"}`, il programma stampa `Nome: T, Età: 0`. Il compilatore avvisa: `incompatible pointer to integer conversion` (con un gcc recente è un errore, e l'eseguibile non viene creato).]
 
 #nota[Il compilatore può inserire *padding* fra i campi, cioè byte vuoti, per rispettare vincoli di allineamento: `sizeof` di una `struct` può essere più della somma dei membri.]
 

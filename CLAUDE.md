@@ -23,10 +23,8 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 ## Capitoli della dispensa (per argomento)
 
 1. "L'ambiente di lavoro UNIX" (lez. 1-2): terminale e filesystem · lavorare con i file · flussi, redirezione e pipe.
-2. "Il linguaggio C" (lez. 1, 3, 4, 5): dal sorgente all'eseguibile · com'è fatto un programma C · tipi e costanti · operatori ed espressioni · il controllo del flusso · array e tipi custom. Le parti sul C della lezione 1 (gcc, primo programma, printf) sono state spostate qui; la tabella dei placeholder di printf sta in fondo a "tipi e costanti", dopo che i tipi sono spiegati.
+2. "Il linguaggio C" (lez. 1, 3, 4, 5): dal sorgente all'eseguibile · com'è fatto un programma C · tipi e costanti · operatori ed espressioni · il controllo del flusso · array e tipi custom.
 
 Gli esercizi della L05 stanno dentro gli argomenti come esempi: non c'è una sezione "esercizi".
 
 Blocchi del semestre (slide L01): Intro → C → Memoria → Strutture. Il prossimo capitolo si apre con la memoria (puntatori, heap).
-
-Il grezzo della lezione 2 non aveva errori rispetto alle slide. Il costo O(1)/O(N) di cp/mv e i dettagli di `cp -p` vengono dal grezzo (detti in aula, non nelle slide).
