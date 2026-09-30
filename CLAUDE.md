@@ -25,23 +25,8 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 1. "L'ambiente di lavoro UNIX" (lez. 1-2): terminale e filesystem · lavorare con i file · flussi, redirezione e pipe.
 2. "Il linguaggio C" (lez. 1, 3, 4, 5): dal sorgente all'eseguibile · com'è fatto un programma C · tipi e costanti · operatori ed espressioni · il controllo del flusso · array e tipi custom. Le parti sul C della lezione 1 (gcc, primo programma, printf) sono state spostate qui; la tabella dei placeholder di printf sta in fondo a "tipi e costanti", dopo che i tipi sono spiegati.
 
-Lezioni 4-5: conversioni e casting stanno in "operatori ed espressioni" (con gli es. 3 e 4); scanf in fondo a "tipi e costanti", dopo i placeholder di printf; es. 1 e 2 in fondo a "il controllo del flusso"; es. 5, 6, 7, 8 dentro "array e tipi custom" come esempi. Non c'è una sezione "esercizi". Non si sa fin dove il prof sia arrivato in aula con gli esercizi (niente grezzo né registrazione): sono in dispensa tutti.
+Gli esercizi della L05 stanno dentro gli argomenti come esempi: non c'è una sezione "esercizi".
 
 Blocchi del semestre (slide L01): Intro → C → Memoria → Strutture. Il prossimo capitolo si apre con la memoria (puntatori, heap).
 
 Il grezzo della lezione 2 non aveva errori rispetto alle slide. Il costo O(1)/O(N) di cp/mv e i dettagli di `cp -p` vengono dal grezzo (detti in aula, non nelle slide).
-
-## Refusi nelle slide
-
-- L03 s.9: `./ eseguibile.out` con uno spazio di troppo.
-- L03 s.21: `%` nell'elenco degli assegnamenti, è `%=`.
-- L03 s.23: "int semplice sta per long int" è sbagliato: `long` da solo sta per `long int`; `int` è un tipo a sé (qui 4 byte contro gli 8 di `long`).
-- L03 s.26: 1.34423424·10⁻⁵ = 0.0000134423424, non 0.000134423424.
-- Dispensa (dalla L01): "gcc = GNU C Compiler" corretto in GNU Compiler Collection (L03 s.9).
-- L04 s.16 / L05 s.3: `float reali1[n];` con `n` minuscola accanto a `#define N`: non messo in dispensa (array a dimensione variabile non spiegati).
-- L05 s.5: `struct Studente s = {15, "Antonio"}` ha i valori in ordine inverso rispetto ai membri (`nome`, `eta`), forse apposta per mostrare il warning: l'output della slide è "Nome: T, Età: 0". In dispensa l'esempio è con `{"Antonio", 15}` (compilato: 24 byte) e una nota riporta il caso invertito.
-- L05 s.9: `typedef char [] String;` non è C valido (sarebbe `typedef char String[N];`): non messo in dispensa.
-- L05 s.19: manca `;` dopo `printf("Valori pari: %d\n", pari)`.
-- L05 s.20: prodotto scalare fino a `a[n]*b[n]`, è `a[n-1]*b[n-1]`.
-- L05 s.24: "richiedendolo se è diverso" → se è *uguale* a uno già immesso.
-- L05 s.26-27 (soluzione es. 8): non fa il controllo sui codici duplicati chiesto dal testo; legge un'`eta` in più e filtra anche con `eta <= eta`, cosa che il testo non chiede; include `stdlib.h` senza usarla. In dispensa: versione che segue il testo (solo stipendio < media), senza controllo duplicati.
