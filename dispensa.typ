@@ -766,7 +766,7 @@ short int a = 1;
 printf("%zu\n", sizeof(a));      // 2
 printf("%zu\n", sizeof(a + 1));  // 4
 ```,
-base[promozione a `int`][Nei calcoli, i valori `char` e `short` vengono prima convertiti in `int`. Quindi `a + 1` è un `int`, anche se `a` è `short`: 4 byte, non 2.]))
+[Nei calcoli i valori `char` e `short` vengono prima convertiti in `int`. Quindi `a + 1` è un `int`, anche se `a` è `short`: 4 byte, non 2.]))
 
 Il `char` è un intero, ma si usa per i *caratteri*. La tabella *ASCII* assegna un carattere a ogni valore che sta in un byte:
 
@@ -861,7 +861,18 @@ Ora che i tipi sono chiari si può completare `printf`: ogni tipo ha il suo plac
   [`%ld`], [long], [`%s`], [stringa],
   [`%lld`], [long long (ancora più lungo)], [`%p`], [indirizzo di memoria],
   [`%zu`], [`size_t`: il risultato di `sizeof`], [`%%`], [il carattere %],
+  [`%hd`], [short], [`%Lf`], [long double],
 )
+
+`printf` scrive su stdout; per *leggere da stdin* c'è `scanf`, sempre nella libreria `stdio`. La stringa di formato è la stessa, ma dopo si passano gli *indirizzi* delle variabili in cui salvare i valori: `&a` è l'indirizzo di `a`.
+
+#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+```c
+int a, b;
+scanf("%d %d", &a, &b);   // due interi
+printf("a = %d\n", a);
+```,
+nota[I placeholder sono gli stessi di `printf`, *tranne quello per `double`*: in `scanf` è `%lf`.])
 
 == Operatori ed espressioni
 
@@ -893,6 +904,44 @@ canvas(length: 1cm, {
 }))
 
 Il risultato deve stare nel tipo dell'espressione: se è troppo grande (o troppo piccolo) per i byte a disposizione si ha *overflow* (o *underflow*), e il valore che esce è sbagliato.
+
+Se in un'espressione ci sono tipi diversi, il C li converte da solo (*conversione implicita*): il tipo più "corto" viene trasformato in quello più "lungo", lungo questa scala (è la stessa promozione vista con `sizeof(a + 1)`).
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  let scala = ("char, short", "int", "long", "float", "double", "long double")
+  for (k, t) in scala.enumerate() {
+    content((k * 2.5, 0), box(width: 1.85cm, inset: 4pt, stroke: 0.6pt, radius: 2pt, fill: rgb("#eef4ff"), align(center, text(8pt, raw(t)))))
+    if k < scala.len() - 1 { line((k * 2.5 + 1.0, 0), (k * 2.5 + 1.5, 0), mark: (end: "stealth"), stroke: 0.6pt) }
+  }
+}))
+
+Nell'assegnamento invece *vince il tipo della variabile a sinistra*: se è più corto del valore, si può perdere informazione. Per scegliere noi il tipo c'è la *conversione esplicita*, con l'operatore di *casting*: `(tipo) espressione`. Con `int a = 5;`:
+
+#align(center, table(columns: 3, align: (left, center, left),
+  [Assegnamento], [`b` vale], [Perché],
+  [`float b = a;`], [`5.000000`], [l'intero viene promosso a `float`],
+  [`float b = a / 2;`], [`2.000000`], [due interi: divisione *intera*, e solo dopo la conversione],
+  [`float b = a / 2.0;`], [`2.500000`], [`2.0` è reale: `a` viene convertito, divisione tra reali],
+  [`float b = (float) a / 2;`], [`2.500000`], [il casting cambia il tipo di `a` *prima* della divisione],
+))
+
+Lo stesso casting serve nei due versi. Per avere il quoziente reale di due interi si converte un operando; per usare `%`, che vuole interi, su un valore letto come `float` lo si converte in `int`:
+
+#grid(columns: (1.15fr, 1fr), gutter: 1em,
+```c
+int a, b;
+scanf("%d %d", &a, &b);        // 7 2
+printf("%d\n", a / b);           // 3
+printf("%.2f\n", (float) a / b); // 3.50
+```,
+```c
+float valore;
+scanf("%f", &valore);   // 7.0
+int n = (int) valore;
+if (n % 2 == 0) puts("Pari");
+else puts("Dispari");
+```)
 
 Gli operatori *logici* sono tutti binari tranne `!`. In C *non esiste un tipo booleano primitivo tradizionale*: si usano i numeri. *0 è falso, qualsiasi valore diverso da 0 è vero*. Il risultato di un operatore logico o di confronto è sempre *0 se falso, 1 se vero*:
 
@@ -948,7 +997,7 @@ canvas(length: 1cm, {
 
 Gli operatori di assegnamento hanno *priorità più bassa* degli altri: nell'ultima riga prima si calcola tutta la parte destra, poi si assegna.
 
-#nota[Attenzione: i tipi devono essere *compatibili*, sia dentro l'espressione sia tra l'espressione e la variabile a cui viene assegnato il valore.]
+#nota[Attenzione: i tipi devono essere *compatibili*, sia dentro l'espressione sia tra l'espressione e la variabile a cui viene assegnato il valore. Una stringa, per esempio, non diventa da sola un intero: il compilatore dà un warning o un errore.]
 
 `++` e `--` aumentano o diminuiscono di 1. La posizione conta quando il valore viene usato:
 
@@ -1134,3 +1183,301 @@ Il `break` qui è essenziale: *senza `break` vengono eseguite anche le istruzion
   text(fill: gray)[`default: puts("altro");`]
 }))
 Stampa `due` e poi `tre`. Con `-Wextra` gcc avvisa: `this statement may fall through`.])
+
+#block(breakable: false)[
+Due esempi che mettono insieme cicli, `if` e `scanf`. A sinistra si legge una sequenza di interi chiusa da 0 (che non ne fa parte) e si contano positivi e negativi: `while`, perché la sequenza può essere vuota. A destra si fa indovinare un numero: `do-while`, perché un tentativo va chiesto *almeno una volta*.
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+int n, quanti = 0, positivi = 0;
+int negativi = 0, somma_positivi = 0;
+
+scanf("%d", &n);
+while (n != 0) {
+    quanti++;
+    if (n > 0) {
+        positivi++;
+        somma_positivi += n;
+    } else {
+        negativi++;
+    }
+    scanf("%d", &n);
+}
+```,
+```c
+int segreto = 37, tentativo;
+
+do {
+    printf("Inserisci un tentativo: ");
+    scanf("%d", &tentativo);
+
+    if (tentativo > segreto)
+        printf("Troppo grande\n");
+    else if (tentativo < segreto)
+        printf("Troppo piccolo\n");
+    else
+        printf("Indovinato!\n");
+} while (tentativo != segreto);
+```)
+]
+
+== Array e tipi custom
+
+Un *array* è una collezione di valori *tutti dello stesso tipo*. Per definirlo bisogna conoscerne la *dimensione*; alla dichiarazione viene riservato uno spazio *contiguo* in memoria, di solito sullo stack. Si accede a un elemento con l'operatore `[]`: `a[i]`, con `i` che parte da 0.
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+```c
+int interi[8];
+
+#define N 100
+double reali[N];   // dimensione con una macro
+```,
+canvas(length: 1cm, {
+  import draw: *
+  for k in range(8) {
+    rect((k * 0.8, 0), (k * 0.8 + 0.8, 0.6), stroke: 0.5pt, fill: rgb("#eef4ff"))
+    content((k * 0.8 + 0.4, -0.25), text(6.5pt, fill: gray, raw("[" + str(k) + "]")))
+  }
+  line((0, 0.75), (0, 0.9), (6.4, 0.9), (6.4, 0.75), stroke: 0.6pt + blu)
+  content((3.2, 1.2), text(8pt, fill: blu)[`int interi[8]`: 8 interi uno dopo l'altro])
+}))
+
+Un array si scorre con un `for` sull'indice. Per esempio il *prodotto scalare* di due vettori, cioè la somma dei prodotti degli elementi con lo stesso indice:
+
+#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+```c
+#define N 10
+int a[N], b[N], prodotto = 0, i;
+
+for (i = 0; i < N; i++)
+    scanf("%d", &a[i]);     // leggo a
+for (i = 0; i < N; i++)
+    scanf("%d", &b[i]);     // leggo b
+for (i = 0; i < N; i++)
+    prodotto += a[i] * b[i];
+```,
+[`&a[i]` è l'indirizzo della cella `i`: `scanf` scrive lì.
+
+`prodotto` alla fine vale \ `a[0]*b[0] + … + a[N-1]*b[N-1]`: \ l'ultimo indice è `N-1`, non `N`.])
+
+Secondo esempio: *invertire* un array senza usarne un secondo. Si scambia la prima cella con l'ultima, la seconda con la penultima, e così via *fino a metà*: andando oltre si rimetterebbe tutto com'era.
+
+#block(breakable: false, grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+```c
+int i, j, scambio;
+int A[10];
+
+for (i = 0; i < 10; i++)
+    A[i] = i;
+
+for (i = 0; i < 10 / 2; i++) {
+    j = (10 - 1) - i;     // la cella opposta
+    scambio = A[i];
+    A[i] = A[j];
+    A[j] = scambio;
+}
+```,
+canvas(length: 1cm, {
+  import draw: *
+  let n = 10
+  let cella(k, y, v) = {
+    rect((k * 0.6, y), (k * 0.6 + 0.6, y + 0.5), stroke: 0.5pt, fill: if k < n / 2 { rgb("#eef4ff") } else { rgb("#fff3c4") })
+    content((k * 0.6 + 0.3, y + 0.25), text(8pt, raw(str(v))))
+  }
+  for k in range(n) { cella(k, 0, k); cella(k, -2.2, n - 1 - k) }
+  for i in range(calc.quo(n, 2)) {
+    let (x1, x2) = (i * 0.6 + 0.3, (n - 1 - i) * 0.6 + 0.3)
+    let h = 0.6 + (calc.quo(n, 2) - i) * 0.17
+    line((x1, 0.55), (x1, h), (x2, h), (x2, 0.55), stroke: 0.5pt + blu, mark: (start: "stealth", end: "stealth", scale: 0.6))
+  }
+  content((3, -0.4), text(7.5pt, fill: blu)[5 scambi: `A[i]` ↔ `A[9 - i]`])
+  line((3, -0.7), (3, -1.55), mark: (end: "stealth"), stroke: 0.6pt)
+})))
+
+Serve la variabile `scambio` perché `A[i] = A[j]` cancella il vecchio valore di `A[i]`: va messo da parte prima.
+
+Un array può avere più dimensioni. `int a[3][3];` riserva 9 interi contigui, e si usa per rappresentare una *matrice*. In memoria non c'è una griglia: gli array a più dimensioni sono salvati *per righe*, una riga dopo l'altra.
+
+#block(breakable: false, grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+[
+```c
+int a[3][2] = {{1,2},{3,4},{5,6}};
+
+printf("%p\n", a);
+printf("%p, %p, %p\n", a[0], a[1], a[2]);
+```
+```sh
+0x7ffd2ba5ac10
+0x7ffd2ba5ac10, 0x7ffd2ba5ac18, 0x7ffd2ba5ac20
+```
+],
+canvas(length: 1cm, {
+  import draw: *
+  let colori = (rgb("#eef4ff"), rgb("#fff3c4"), rgb("#dff2e3"))
+  for r in range(3) { for c in range(2) {
+    let v = r * 2 + c + 1
+    rect((c * 0.7, -r * 0.6), (c * 0.7 + 0.7, -r * 0.6 + 0.6), stroke: 0.5pt, fill: colori.at(r))
+    content((c * 0.7 + 0.35, -r * 0.6 + 0.3), raw(str(v)))
+    let x = 2.4 + (v - 1) * 0.7
+    rect((x, -0.6), (x + 0.7, 0), stroke: 0.5pt, fill: colori.at(r))
+    content((x + 0.35, -0.3), raw(str(v)))
+  } }
+  content((0.7, 0.9), text(7.5pt)[la matrice])
+  content((4.5, 0.9), text(7.5pt)[in memoria])
+  for (r, nome) in ("a = a[0]", "a[1]", "a[2]").enumerate() {
+    let x = 2.4 + r * 1.4
+    line((x, -1.0), (x, -0.65), mark: (end: "stealth"), stroke: 0.5pt)
+    content((x + 0.1, -1.2), anchor: "west", text(7pt, raw(nome)))
+    content((x + 0.1, -1.5), anchor: "west", text(6.5pt, fill: gray, raw("…" + ("c10", "c18", "c20").at(r))))
+  }
+})))
+
+`a`, `a[0]`, `a[1]` e `a[2]` sono gli *indirizzi delle righe*: `a` coincide con `a[0]`, e ogni riga inizia 8 byte dopo la precedente, cioè 2 `int` da 4 byte. Per questo la *seconda dimensione* è importante: per trovare `a[i][j]` bisogna saltare `i` righe intere, e serve sapere quanto è lunga una riga. Le dimensioni possono essere anche più di due: `int a[3][4][2];`.
+
+Una matrice si scorre con due `for` annidati, uno sulle righe e uno sulle colonne. Il prodotto scalare di prima, fra due matrici 10×10:
+
+```c
+int a[N][N], b[N][N], prodotto = 0, i, j;
+// ... lettura: scanf("%d", &a[i][j]) dentro gli stessi due for
+for (i = 0; i < N; i++)
+    for (j = 0; j < N; j++)
+        prodotto += a[i][j] * b[i][j];
+```
+
+Gli array tengono valori dello stesso tipo. Per mettere insieme valori di *tipo diverso* c'è la `struct`. La parola chiave `struct` *definisce un nuovo tipo, non dichiara una variabile*: la variabile si dichiara dopo. I pezzi si chiamano *membri* e si leggono con `variabile.membro`.
+
+#block(breakable: false, grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+```c
+#define LEN 20
+
+struct Studente {     // il nuovo tipo
+    char nome[LEN];
+    int eta;
+};
+
+int main(void) {
+    struct Studente s = {"Antonio", 15};
+
+    printf("Nome: %s, Età: %d\n",
+           s.nome, s.eta);
+    printf("Dimensione: %lu\n",
+           sizeof(s));
+    return 0;
+}
+```,
+[
+```sh
+$ ./main
+Nome: Antonio, Età: 15
+Dimensione: 24
+```
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  rect((0, 0), (5, 0.6), stroke: 0.5pt, fill: rgb("#eef4ff")); content((2.5, 0.3), text(8pt)[`nome`: 20 byte])
+  rect((5, 0), (6, 0.6), stroke: 0.5pt, fill: rgb("#fff3c4")); content((5.5, 0.3), text(8pt)[`eta`])
+  content((5.5, -0.25), text(7pt, fill: gray)[4 byte])
+  line((0, 0.75), (0, 0.9), (6, 0.9), (6, 0.75), stroke: 0.6pt + blu)
+  content((3, 1.15), text(8pt, fill: blu)[`s`: 24 byte contigui])
+}))
+L'ordine dei membri nella definizione è l'ordine in memoria, e lo spazio di una variabile è contiguo. I valori fra graffe vanno *nello stesso ordine dei membri*.
+]))
+
+#nota[#set par(justify: false)
+Con l'ordine sbagliato, `{15, "Antonio"}`, il programma stampa `Nome: T, Età: 0`. Il compilatore avvisa: `incompatible pointer to integer conversion`.]
+
+#nota[Il compilatore può inserire *padding* fra i campi, cioè byte vuoti, per rispettare vincoli di allineamento: `sizeof` di una `struct` può essere più della somma dei membri.]
+
+Il secondo tipo custom è l'`enum`, un tipo *enumerativo*: un elenco di nomi, ognuno dei quali è una *costante intera*. Serve a rendere il codice più leggibile, per esempio nei `case` di uno `switch`. Di default i valori partono da 0 e crescono di 1; si possono cambiare, e da lì in poi si continua a contare.
+
+#let valori-enum(voci) = {
+  let (v, out) = (-1, ())
+  for (nome, fisso) in voci { v = if fisso == none { v + 1 } else { fisso }; out.push((nome, v)) }
+  out
+}
+#let tabella-enum(voci) = table(columns: voci.len(), align: center, inset: 4pt,
+  ..valori-enum(voci).map(((n, _)) => text(8pt, raw(n))), ..valori-enum(voci).map(((_, v)) => raw(str(v))))
+#let giorni = ("lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica")
+
+```c
+enum giorni {lunedi, martedi, mercoledi, giovedi, venerdi, sabato, domenica};
+```
+#align(center, tabella-enum(giorni.map(g => (g, none))))
+```c
+enum giorni {lunedi = 1, martedi, mercoledi, giovedi = 7, venerdi, sabato, domenica};
+```
+#align(center, tabella-enum(giorni.map(g => (g, (lunedi: 1, giovedi: 7).at(g, default: none)))))
+
+Infine `typedef` *dà un nuovo nome a un tipo esistente*: utile per nomi di tipo lunghi, o per averne uno più facile da ricordare. Senza `typedef` le parole `struct` ed `enum` vanno ripetute ogni volta che si dichiara una variabile.
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+struct Studente { ... };
+enum giorni { ... };
+
+struct Studente s;   // senza typedef
+enum giorni giorno;
+```,
+```c
+typedef struct { ... } Studente;
+typedef enum { ... } Giorni;
+
+Studente s;          // con typedef
+Giorni giorno;
+```)
+
+L'esempio che li usa tutti: l'anagrafe di `N` dipendenti. Di ognuno si leggono codice, età, stipendio e ruolo (0 dirigente, 1 quadro, 2 operaio, 3 impiegato); poi si stampano codice, età e ruolo di chi guadagna *meno dello stipendio medio*. I dipendenti stanno in un *array di struct*, il ruolo è un `enum`.
+
+#block(breakable: false, grid(columns: (1fr, 1.25fr), gutter: 1em,
+```c
+#define N 10
+
+typedef enum {
+    dirigente,
+    quadro,
+    operaio,
+    impiegato
+} ruolo_t;
+
+typedef struct {
+    int id;
+    int eta;
+    float salario;
+    ruolo_t ruolo;
+} dipendente_t;
+```,
+```c
+dipendente_t dipendenti[N];
+int i, ruolo_dip;
+float media = 0;
+
+for (i = 0; i < N; i++) {
+    scanf("%d", &dipendenti[i].id);
+    scanf("%d", &dipendenti[i].eta);
+    scanf("%f", &dipendenti[i].salario);
+    scanf("%d", &ruolo_dip);
+    dipendenti[i].ruolo = ruolo_dip;
+    media += dipendenti[i].salario;
+}
+media /= N;
+```))
+
+`dipendenti[i].salario` si legge da sinistra: la cella `i` dell'array, e di quella il membro `salario`. La stampa usa uno `switch` sul ruolo, perché l'`enum` è un intero e `printf` stamperebbe solo il numero:
+
+#block(breakable: false)[
+```c
+for (i = 0; i < N; i++)
+    if (dipendenti[i].salario < media) {
+        printf("%d %d ", dipendenti[i].id, dipendenti[i].eta);
+        switch (dipendenti[i].ruolo) {
+            case dirigente: printf("dirigente\n"); break;
+            case quadro:    printf("quadro\n");    break;
+            case operaio:   printf("operaio\n");   break;
+            default:        printf("impiegato\n");
+        }
+    }
+```
+```sh
+3 22 operaio
+4 32 impiegato
+```
+]
