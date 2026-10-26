@@ -236,6 +236,8 @@ $ cat "appunti lezione.txt"
 
 #nota[Vedremo come un programma C legge questi argomenti con `argc` e `argv`, i parametri di `main`.]
 
+#esercizio[orientarsi][Stampare la directory corrente e il suo contenuto, creare una directory `lezione01`, entrarci e verificare di essere nel posto giusto. Comandi: `pwd`, `ls`, `mkdir`, `cd`.]
+
 == Lavorare con i file
 
 Per creare directory e file vuoti si usano `mkdir` e `touch`:
@@ -425,19 +427,7 @@ $ ls | less      # scorro l'elenco
 
 #nota[*Idea UNIX*: piccoli programmi che si combinano per costruire operazioni più complesse.]
 
-#block(breakable: false)[
-*Micro-esercizio.* Partendo dalla home: creare `lezione02`, entrarci, creare `a.c`, `b.c`, `note.txt` vuoti, salvare l'elenco dei soli `.c` in `sorgenti.txt`, aggiungerlo a `note.txt`, contare le righe di `note.txt`.
-
-```sh
-$ mkdir lezione02
-$ cd lezione02
-$ touch a.c b.c note.txt
-$ ls *.c > sorgenti.txt
-$ cat sorgenti.txt >> note.txt
-$ wc -l < note.txt
-2
-```
-]
+#esercizio[file e flussi][Partendo dalla home: creare la directory `lezione02` ed entrarci; creare tre file vuoti `a.c`, `b.c`, `note.txt`; mostrare solo i file `.c` e salvare quell'elenco in `sorgenti.txt`; aggiungere il contenuto di `sorgenti.txt` a `note.txt`; contare le righe di `note.txt`.]
 
 = Il linguaggio C
 
@@ -604,6 +594,8 @@ table(columns: 2,
   + ho ricompilato? ci sono errori o warning?
   + l'eseguibile è stato creato, e sto eseguendo quello giusto?]
 
+#esercizio[il ciclo completo][Creare `hello.c`, compilarlo con i warning attivi ed eseguirlo; poi cambiare il messaggio, ricompilare e rieseguire.]
+
 == Com'è fatto un programma C
 
 C segue il *paradigma imperativo*: il programma è una sequenza di istruzioni che, una dopo l'altra, cambiano i valori in memoria. Ed è *strutturato a blocchi*: il programma è una collezione di *funzioni*, e l'esecuzione parte sempre dalla funzione `main`. Un file C ha tre parti, in quest'ordine:
@@ -661,6 +653,8 @@ Laboratorio 2
 Lezione 1
 2 * 21 = 42
 ```)
+
+#esercizio[tre modifiche][Partendo da `hello.c`: stampare il proprio nome; stampare due righe con `printf`; introdurre una variabile intera e stamparne il valore.]
 
 I nomi che scegli tu (di variabili, funzioni, tipi) sono *identificatori*: sequenze di lettere, cifre e `_` che iniziano con una lettera o con `_`. Le *parole chiave* del linguaggio (`int`, `return`, `while`, …) sono riservate e non si possono usare come nomi.
 
@@ -963,6 +957,10 @@ L'ultima riguarda lo `switch`: l'espressione deve essere *intera* (niente string
 
 stampa `due` e `tre`. Con `-Wextra` gcc avvisa: `this statement may fall through`.
 
+#esercizio[sequenza terminata da 0][Leggere una sequenza di interi che termina con 0 (lo 0 non fa parte della sequenza). Stampare quanti numeri sono stati inseriti, quanti sono positivi, quanti negativi e la somma dei positivi.]
+
+#esercizio[indovina il numero][Fissare nel programma un intero, per esempio 37. Chiedere ripetutamente un tentativo all'utente e stampare se è troppo grande, troppo piccolo o corretto; terminare quando il numero è indovinato.]
+
 == Array e tipi custom
 
 Un *array* è una collezione di valori *tutti dello stesso tipo*. Per definirlo bisogna conoscerne la *dimensione*; alla dichiarazione viene riservato uno spazio *contiguo* in memoria, di solito sullo stack. Si accede a un elemento con l'operatore `[]`: `a[i]`, con `i` che parte da 0.
@@ -1001,6 +999,8 @@ for (i = 0; i < N; i++)
 [`&a[i]` è l'indirizzo della cella `i`: `scanf` scrive lì.
 
 `prodotto` alla fine vale \ `a[0]*b[0] + … + a[N-1]*b[N-1]`: \ l'ultimo indice è `N-1`, non `N`.])
+
+#esercizio[invertire un array][Invertire un array `A` di 10 interi *senza array d'appoggio*: scambiare la prima cella con l'ultima, la seconda con la penultima, e così via. Poi stampare ogni elemento dell'array modificato.]
 
 Un array può avere più dimensioni. `int a[3][3];` riserva 9 interi contigui, e si usa per rappresentare una *matrice*. In memoria non c'è una griglia: gli array a più dimensioni sono salvati *per righe*, una riga dopo l'altra.
 
@@ -1806,8 +1806,6 @@ Per leggere caratteri e stringhe, e per convertire una stringa in numero:
 
 #esercizio[prefisso comune][`LCP(s1, s2)` è la lunghezza del più lungo prefisso comune a `s1` e `s2`. Leggere `n` e poi `n` stringhe di al più 500 caratteri; per ogni `0 < i < n` stampare `LCP(S[i-1], S[i])`. `LCP(AABB, AAZZ) = 2`, `LCP(mississippi, missi) = 5`, `LCP(laboratorio, laboratoriale) = 10`.]
 
-#esercizio[suffissi ordinati][Leggere una stringa di al più 1000 caratteri e stampare tutti i suoi suffissi, uno per riga, in ordine lessicografico. Si può usare `qsort` (prossima sezione). Da `ciao`: `ao`, `ciao`, `iao`, `o`.]
-
 == Puntatori a funzioni <puntatori-funzione>
 
 In JavaScript una funzione è un valore e si passa come qualsiasi altro. In C le funzioni *non sono variabili*, ma se ne può prendere un *puntatore*, da passare come parametro o da usare per chiamare la funzione:
@@ -1857,6 +1855,8 @@ qsort(a, 5, sizeof(int), compInt);
 // 0 2 9 17 43
 ```,
 [È lo stesso schema di `array.sort((a, b) => a - b)` in JavaScript. La differenza è che `compInt` riceve dei `void*`, e deve prima convertirli al tipo vero per poterli dereferenziare. `const` dice che la funzione non modificherà gli elementi.])
+
+#esercizio[suffissi ordinati][Leggere una stringa di al più 1000 caratteri e stampare tutti i suoi suffissi, uno per riga, in ordine lessicografico. Si può usare `qsort`. Da `ciao`: `ao`, `ciao`, `iao`, `o`.]
 
 == Trovare gli errori <debugging>
 
@@ -1965,6 +1965,8 @@ s->n = 0;
 [Ai campi si accede con l'operatore *`->`*: `s->n` è una scorciatoia per `(*s).n`, cioè "il campo `n` della `struct` puntata da `s`". Le parentesi servono perché `.` lega più di `*`: `*s.n` vorrebbe dire `*(s.n)`.
 
 `.` si usa su una `struct`, `->` su un *puntatore* a `struct`.])
+
+#esercizio[ordinare con merge sort][Allocare dinamicamente un array di puntatori a `struct Studente` (matricola ed età), leggere numero e dati degli studenti, ordinare l'array per matricola con Merge Sort e stamparlo, poi liberare tutta la memoria. Si ordinano i *puntatori*: `array[k] = L[i]` sposta un indirizzo, non la `struct`.]
 
 Una `struct` può contenere un puntatore a una `struct` del suo stesso tipo (*self-referential struct*). È quello che serve per una *lista concatenata*: ogni elemento contiene un valore e il riferimento all'elemento *successivo*; la lista si gestisce tenendo un puntatore al *primo* elemento, la testa (`head`). L'ultimo ha `next = NULL`.
 
@@ -2081,8 +2083,6 @@ int main(void) {
 [`lista` è un `Studente *`; il suo indirizzo `&lista` è uno `Studente **`. Dentro `testLista`, `*lista` *è* la variabile `lista` del `main`, quindi assegnarle una nuova testa cambia proprio quella.])
 
 #esercizio[lista di studenti][Completare il programma: `stampaLista`; `ordinaPerEta`, che ordina la lista per età crescente con un bubble sort che scambia i *valori* dei nodi (non i puntatori); `estraiPerEta`, che restituisce una *nuova* lista con gli studenti dell'età letta da tastiera. Alla fine liberare entrambe le liste.]
-
-#esercizio[ordinare con merge sort][Allocare dinamicamente un array di puntatori a `struct Studente` (matricola ed età), leggere numero e dati degli studenti, ordinare l'array per matricola con Merge Sort e stamparlo, poi liberare tutta la memoria. Si ordinano i *puntatori*: `array[k] = L[i]` sposta un indirizzo, non la `struct`.]
 
 == Alberi binari di ricerca <alberi>
 

@@ -39,6 +39,6 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 4. "Strutture dati" (lez. 10-12): liste concatenate · alberi binari di ricerca.
 5. Riepilogo (appendice): errori, puntatori, classi di memorizzazione, trappole.
 
-Gli esercizi con soluzione del prof che insegnano un costrutto stanno nel testo come esempi; gli altri sono `#esercizio` con la sola consegna.
+Tutti gli esercizi del prof sono nella dispensa (anche i micro-esercizi di L01-L02), ognuno subito dopo l'argomento che serve. Quelli la cui soluzione del prof sta nel testo come esempio (quoziente, pari/dispari, prodotto scalare, anagrafe, `sum_submatrix`) non hanno box; gli altri sono `#esercizio` con la sola consegna.
 
 Fin qui: lezione 12. **Compitino 1: 3 novembre 2026, domande a risposta multipla.**
