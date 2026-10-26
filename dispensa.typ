@@ -6,7 +6,10 @@
 #set par(justify: true)
 #set heading(numbering: "1.1")
 #show heading.where(level: 1): it => { pagebreak(weak: true); it }
-#show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%)
+#show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%, breakable: false)
+#show table: set par(justify: false)
+#show table: it => block(breakable: false, it)
+#show grid: set par(justify: false)
 #show raw.where(block: false): box.with(fill: luma(240), inset: (x: 3pt), outset: (y: 3pt), radius: 2pt)
 #set table(stroke: 0.5pt + luma(180), inset: 6pt)
 #show table.cell.where(y: 0): strong
@@ -26,6 +29,20 @@
   fill: rgb("#eefaf2"), stroke: (left: 3pt + verde),
   inset: 10pt, width: 100%,
 )[*Da sapere — #titolo* #h(0.3em) #text(8pt, fill: verde)[(aggiunto, non spiegato in aula)] \ #body]
+
+// "cosa devi saper fare" all'inizio di un capitolo
+#let obiettivi(..voci) = block(stroke: 1pt + luma(150), radius: 4pt, inset: 10pt, width: 100%)[
+  *Cosa devi saper fare* #list(..voci.pos())]
+// esercizio dalle slide del prof: solo consegna, niente soluzione
+#let esercizio(titolo, body) = block(breakable: false, stroke: (left: 3pt + rgb("#e08a00")), fill: rgb("#fff6e6"), inset: 10pt, width: 100%)[
+  *Esercizio — #titolo* \ #body]
+
+// definizione di un concetto importante
+#let viola = rgb("#7b4bb7")
+#let definizione(titolo, body) = block(
+  fill: rgb("#f4effc"), stroke: (left: 3pt + viola),
+  inset: 10pt, width: 100%,
+)[*Definizione — #titolo.* #body]
 
 #let mono(s) = text(font: "DejaVu Sans Mono", s)
 // conto in colonna: righe allineate a destra, riga sopra il risultato
@@ -83,6 +100,12 @@
 #outline(depth: 2)
 
 = L'ambiente di lavoro UNIX
+
+#obiettivi(
+  [muoverti nel filesystem con percorsi assoluti e relativi (`pwd`, `ls`, `cd`, `.`, `..`, `~`);],
+  [creare, copiare, spostare e cancellare file e directory, e dire quali timestamp cambiano;],
+  [prevedere cosa fanno wildcard, redirezioni (`>`, `>>`, `<`, `2>`) e pipe `|`.],
+)
 
 == Il terminale e il filesystem
 
@@ -418,7 +441,15 @@ $ wc -l < note.txt
 
 = Il linguaggio C
 
-== Dal sorgente all'eseguibile
+#obiettivi(
+  [compilare con `gcc`, separare le fasi (`-E`, `-c`, linking) e distinguere errori di compilazione, di linking e di esecuzione;],
+  [dire tipo e valore di un'espressione: divisione intera, conversioni, casting, cortocircuito, `++` prefisso e postfisso;],
+  [scrivere cicli, `if` e `switch`, e leggere e stampare con `scanf` e `printf`;],
+  [usare array, matrici, `struct`, `enum` e `typedef`;],
+  [scrivere funzioni con prototipo, dividere un programma in `.h` e `.c`, e dire dove vive e chi vede una variabile (`auto`, `extern`, `static`).],
+)
+
+== Dal sorgente all'eseguibile <compilazione>
 
 Scrivere un programma C è un ciclo che si ripete:
 
@@ -542,7 +573,7 @@ pila(larghezza: 3cm,
 [
   Variabili globali e locali sono spiegate nella prossima sezione.
 
-  #base[stack e heap][Lo *stack* (pila) cresce e si svuota da solo: quando una funzione parte, le sue variabili locali vengono messe in cima; quando finisce, vengono tolte. L'*heap* è la memoria che il programma chiede esplicitamente mentre gira, e che resta finché non la restituisce.]
+  Lo *stack* (pila) cresce e si svuota da solo: quando una funzione parte, le sue variabili locali vengono messe in cima; quando finisce, vengono tolte. L'*heap* è la memoria che il programma chiede esplicitamente mentre gira, e che resta finché non la restituisce (@allocazione).
 ])
 
 Se qualcosa va storto, l'errore può arrivare in due momenti diversi:
@@ -595,7 +626,7 @@ int main(void) {     // 3. funzioni
   3. *funzioni*: `main` prende niente (`void`) e restituisce un intero (`int`). `return 0` la termina e restituisce 0 al sistema operativo.
 ])
 
-Le *graffe* `{ }` delimitano un blocco. Indentazione e nomi sensati non sono obbligatori, ma il programma deve essere leggibile. Per questo servono i *commenti*: testo racchiuso fra `/*` e `*/` (anche su più righe), oppure da `//` a fine riga. Il compilatore li ignora. Documenta *sempre* cosa fa un'istruzione, un blocco o una funzione: serve quando rileggi.
+Graffe, commenti (`/* … */` e `//`) e punto e virgola sono come in JavaScript.
 
 Per stampare ci sono due funzioni, `puts` e `printf`:
 
@@ -811,14 +842,14 @@ Il carattere `\` è un carattere speciale di *escape*: insieme al carattere dopo
 
 Le costanti stringa sono memorizzate come *array di caratteri*, cioè caratteri uno dopo l'altro in memoria:
 
-#base[il terminatore `'\0'`][In fondo a ogni stringa il compilatore aggiunge `'\0'`, che segna dove finisce. Per questo `sizeof("ciao!\n")` vale 7: sei caratteri più il terminatore.
+In fondo a ogni stringa il compilatore aggiunge `'\0'`, che segna dove finisce (@stringhe). Per questo `sizeof("ciao!\n")` vale 7: sei caratteri più il terminatore.
 #align(center, canvas(length: 1cm, {
   import draw: *
   for (k, c) in ("c", "i", "a", "o", "!", "\\n", "\\0").enumerate() {
     rect((k * 0.8, 0), (k * 0.8 + 0.8, 0.6), stroke: 0.5pt, fill: if k == 6 { rgb("#fde2e2") } else { white })
     content((k * 0.8 + 0.4, 0.3), raw(c))
   }
-}))]
+}))
 
 Ogni tipo ha il suo placeholder in `printf`, e *il placeholder deve essere compatibile con il tipo del valore*. Ognuno è fatto così:
 
@@ -859,34 +890,19 @@ printf("a = %d\n", a);
 ```,
 nota[I placeholder sono gli stessi di `printf`, *tranne quello per `double`*: in `scanf` è `%lf`.])
 
-== Operatori ed espressioni
+#nota[Ogni carattere in più nella stringa di formato `scanf` *lo aspetta in input*: con `scanf("ciao%d", &n)` bisogna scrivere proprio `ciao` prima del numero. Per questo il prof chiede una `scanf` per variabile, con solo il placeholder.]
 
-Gli operatori combinano valori e variabili in *espressioni*. Sono di quattro famiglie:
+== Operatori e controllo del flusso
 
-#block(breakable: false, table(columns: (auto, 1fr),
-  [Famiglia], [Operatori],
-  [aritmetici], [`+`, `-`, `*`, `/`, `%`],
-  [logici e di confronto], [`!`, `&&`, `||` fra valori booleani; `==`, `!=`, `>`, `>=`, `<`, `<=` fra valori numerici],
-  [di assegnamento], [`=`, `+=`, `-=`, `*=`, `/=`, `%=`],
-  [incremento e decremento], [`++`, `--`],
-))
+Operatori (`+ - * / %`, `== != < <= > >=`, `! && ||`, `= += -= …`, `++ --`), `if`/`else`, `while`, `do-while`, `for`, `break`, `continue` e `switch` si scrivono e funzionano come in JavaScript, cortocircuito di `&&` e `||` compreso. Le differenze sono nei *tipi*.
 
-Gli *aritmetici* sono addizione, sottrazione, moltiplicazione, divisione e modulo (il resto della divisione). Il risultato dipende dal tipo degli operandi: tra due interi la divisione è *intera*, la parte decimale si butta.
+La prima: *tra due interi la divisione è intera*, la parte decimale si butta. In JavaScript `5 / 3` darebbe 1.666…
 
-#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
 ```c
 5 / 3        // 1          divisione intera
 5.0 / 3.0    // 1.666667   divisione tra reali
 5 % 3        // 2          resto
-```,
-canvas(length: 1cm, {
-  import draw: *
-  for k in range(5) { circle((k * 0.6, 0), radius: 0.22, fill: if k < 3 { rgb("#eef4ff") } else { rgb("#fde2e2") }) }
-  line((-0.25, -0.35), (-0.25, -0.4), (1.45, -0.4), (1.45, -0.35), stroke: 0.8pt + blu)
-  content((0.6, -0.75), text(8pt, fill: blu)[un gruppo da 3: `5 / 3` = 1])
-  line((1.55, 0.35), (1.55, 0.4), (2.65, 0.4), (2.65, 0.35), stroke: 0.8pt + red)
-  content((2.1, 0.75), text(8pt, fill: red)[avanzano 2: `5 % 3` = 2])
-}))
+```
 
 Il risultato deve stare nel tipo dell'espressione: se è troppo grande (o troppo piccolo) per i byte a disposizione si ha *overflow* (o *underflow*), e il valore che esce è sbagliato.
 
@@ -909,6 +925,7 @@ Nell'assegnamento invece *vince il tipo della variabile a sinistra*: se è più 
   [`float b = a / 2;`], [`2.000000`], [due interi: divisione *intera*, e solo dopo la conversione],
   [`float b = a / 2.0;`], [`2.500000`], [`2.0` è reale: `a` viene convertito, divisione tra reali],
   [`float b = (float) a / 2;`], [`2.500000`], [il casting cambia il tipo di `a` *prima* della divisione],
+  [`float b = (float) (a / 2);`], [`2.000000`], [qui il casting si applica al *risultato*: la divisione è già stata fatta fra interi],
 ))
 
 Lo stesso casting serve nei due versi. Per avere il quoziente reale di due interi si converte un operando; per usare `%`, che vuole interi, su un valore letto come `float` lo si converte in `int`:
@@ -928,238 +945,14 @@ if (n % 2 == 0) puts("Pari");
 else puts("Dispari");
 ```)
 
-Gli operatori *logici* sono tutti binari tranne `!`. In C *non c'è un tipo booleano di base*: si usano i numeri. *0 è falso, qualsiasi valore diverso da 0 è vero*. Il risultato di un operatore logico o di confronto è sempre *0 se falso, 1 se vero*:
-
-#let cv(b) = if b { "1" } else { "0" }
-#align(center, table(columns: 5, align: center,
-  [`a`], [`b`], [`!a`], [`a && b`], [`a || b`],
-  ..for a in (0, 5) { for b in (0, -3) {
-    (str(a), str(b), cv(a == 0), cv(a != 0 and b != 0), cv(a != 0 or b != 0)).map(raw)
-  } }
-))
-
-`&&` e `||` hanno una *valutazione cortocircuitata*: la valutazione si ferma appena il risultato è noto. Se in `a && b` la `a` vale 0, il risultato è già 0 e `b` non viene nemmeno calcolata; se in `a || b` la `a` è diversa da 0, il risultato è già 1. Così si ottiene un risultato anche quando la parte dopo darebbe errore:
-
-#align(center, canvas(length: 1cm, {
-  import draw: *
-  content((0, 0), box(inset: 5pt, stroke: 0.8pt + verde, fill: rgb("#dff2e3"), radius: 2pt)[`b != 0`])
-  content((2.1, 0), text(12pt)[`&&`])
-  content((4.5, 0), box(inset: 5pt, stroke: 0.6pt + gray, radius: 2pt, text(fill: gray)[`a / b > 2`]))
-  line((3.5, -0.3), (5.5, 0.3), stroke: 1pt + red)
-  content((0, -0.9), box(width: 3.4cm, align(center, text(8pt)[con `b = 0` vale 0, \ quindi tutto vale 0 …])))
-  content((4.5, -0.9), box(width: 4.2cm, align(center, text(8pt, fill: red)[… e questa non si calcola: \ niente divisione per 0])))
-}))
-
-Attenzione a scrivere i confronti come in matematica. `2 < a < 5` *non* controlla che `a` sia tra 2 e 5: equivale a `(2 < a) < 5`, e `2 < a` vale 0 o 1, che è sempre minore di 5. Con `a = 7`:
+La seconda: in C *non c'è un tipo booleano di base*. *0 è falso, qualsiasi valore diverso da 0 è vero*, e un confronto o un operatore logico restituisce un `int`: *0 se falso, 1 se vero*. Le condizioni di `if` e dei cicli sono quindi numeri: `while (1)` è un ciclo infinito, `if (n)` vuol dire `if (n != 0)`.
 
 #grid(columns: (auto, 1fr), gutter: 2em, align: horizon,
 passi(("a = 7", "2 < a < 5"), ("prima 2 < a", "1 < 5"), ("risultato", "1  (vero!)")),
-[La forma corretta è `2 < a && a < 5`, che con `a = 7` dà 0. Con `-Wall` il compilatore se ne accorge:
-```sh
-warning: comparisons like 'X<=Y<=Z' do not have their
-mathematical meaning [-Wparentheses]
-```])
+[*Trappola*: `2 < a < 5` *non* controlla che `a` stia fra 2 e 5. È `(2 < a) < 5`, e `2 < a` vale 0 o 1, sempre minore di 5. Si scrive `2 < a && a < 5`. Con `-Wall` gcc avvisa: `comparisons like 'X<=Y<=Z' do not have their mathematical meaning`.])
 
-L'*assegnamento* ha la forma `variabile = parte_destra`. La parte destra è un'espressione, che può essere a sua volta un assegnamento: l'assegnamento stesso restituisce il valore assegnato. Per questo si può scrivere l'*assegnamento multiplo*, che è *associativo da destra*: si esegue partendo dall'ultimo.
+L'ultima riguarda lo `switch`: l'espressione deve essere *intera* (niente stringhe, a differenza di JS), e le etichette dei `case` costanti e diverse fra loro. Come in JavaScript, *senza `break` si prosegue nei `case` successivi*: con `c = 2`
 
-#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
-```c
-a = b = c = 0;   // a = (b = (c = 0))
-a += 5;          // a = a + 5
-a = 3 + 4 * 2;   // 11: prima il calcolo
-```,
-canvas(length: 1cm, {
-  import draw: *
-  let nomi = ("a", "b", "c")
-  for (k, n) in nomi.enumerate() {
-    content((k * 1.8, 0), box(inset: 4pt, stroke: 0.6pt, raw(n + " = 0")))
-    content((k * 1.8, -0.5), text(7pt, fill: gray)[#(3 - k)°])
-  }
-  content((5.1, 0), [`0`])
-  for k in range(3) { line((k * 1.8 + 1.7, 0.45), (k * 1.8 + 0.2, 0.45), mark: (end: "stealth"), stroke: 0.6pt + blu) }
-  content((2.5, 0.85), text(7.5pt, fill: blu)[il valore viaggia da destra a sinistra])
-}))
-
-Gli operatori di assegnamento hanno *priorità più bassa* degli altri: nell'ultima riga prima si calcola tutta la parte destra, poi si assegna.
-
-#nota[Attenzione: i tipi devono essere *compatibili*, sia dentro l'espressione sia tra l'espressione e la variabile a cui viene assegnato il valore. Una stringa, per esempio, non diventa da sola un intero: il compilatore dà un warning o un errore.]
-
-`++` e `--` aumentano o diminuiscono di 1. La posizione conta quando il valore viene usato:
-
-#align(center, table(columns: 3, align: (left, left, center),
-  [Con `a = 5`], [Cosa fa], [Risultato],
-  [`x = ++a;`], [prima incrementa, poi restituisce il *nuovo* valore], [`x = 6`, `a = 6`],
-  [`x = a++;`], [restituisce il valore *attuale*, poi incrementa], [`x = 5`, `a = 6`],
-))
-
-== Il controllo del flusso
-
-Le istruzioni di un blocco vengono eseguite in ordine. I *comandi* condizionali e i cicli cambiano quest'ordine, e decidono guardando un'espressione: come per gli operatori logici, *diversa da 0 = vera, 0 = falsa*.
-
-// schema a blocchi: ogni nodo è una scatola di larghezza fissa
-#let nodo(pos, t, fill: rgb("#eef4ff")) = draw.content(pos, box(width: 1.9cm, inset: 4pt, stroke: 0.6pt, radius: 3pt, fill: fill, align(center, text(7.5pt, t))))
-#let cond(pos, t) = nodo(pos, t, fill: rgb("#fff3c4"))
-#let freccia(..punti) = draw.line(..punti, mark: (end: "stealth"), stroke: 0.6pt)
-#let etichetta(pos, t) = draw.content(pos, text(7pt, fill: gray, t))
-
-#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
-[
-```c
-if (espressione)
-    comando;
-else
-    comando;
-```
-Se l'espressione è diversa da 0 si esegue il primo comando, altrimenti quello dell'`else`. L'`else` si può omettere, e gli `if` si possono annidare uno dentro l'altro.
-],
-canvas(length: 1cm, {
-  import draw: *
-  freccia((0, 0.9), (0, 0.3))
-  cond((0, 0), [`espressione` ≠ 0 ?])
-  freccia((-0.5, -0.3), (-1.1, -1.0)); etichetta((-1.05, -0.5), [sì])
-  freccia((0.5, -0.3), (1.1, -1.0)); etichetta((1.05, -0.5), [no])
-  nodo((-1.1, -1.3), [comando])
-  nodo((1.1, -1.3), [comando dell'`else`])
-  line((-1.1, -1.6), (-1.1, -2.0), (1.1, -2.0), (1.1, -1.6), stroke: 0.6pt)
-  freccia((0, -2.0), (0, -2.5))
-}))
-
-I *cicli* ripetono un blocco di codice finché l'espressione resta diversa da 0; quando diventa 0 si prosegue dopo il ciclo. Il C ne ha tre:
-
-#align(center, grid(columns: 3, gutter: 2.5em,
-[```c
-while (espressione)
-    comando;
-```],
-[```c
-do
-    comando;
-while (espressione);
-```],
-[```c
-for (espressione1;
-     espressione2;
-     espressione3)
-    comando;
-```],
-canvas(length: 1cm, {
-  import draw: *
-  freccia((0, 0.9), (0, 0.3))
-  cond((0, 0), [`espressione` ≠ 0 ?])
-  freccia((0, -0.3), (0, -1.0)); etichetta((0.25, -0.65), [sì])
-  nodo((0, -1.3), [comando])
-  freccia((-0.95, -1.3), (-1.3, -1.3), (-1.3, 0), (-0.95, 0))
-  freccia((0.95, 0), (1.3, 0), (1.3, -2.1)); etichetta((1.15, 0.2), [no])
-  etichetta((1.3, -2.3), [fuori])
-}),
-canvas(length: 1cm, {
-  import draw: *
-  freccia((0, 0.9), (0, 0.3))
-  nodo((0, 0), [comando])
-  freccia((0, -0.3), (0, -1.0))
-  cond((0, -1.3), [`espressione` ≠ 0 ?])
-  freccia((-0.95, -1.3), (-1.3, -1.3), (-1.3, 0), (-0.95, 0)); etichetta((-1.5, -0.65), [sì])
-  freccia((0, -1.6), (0, -2.1)); etichetta((0.25, -1.85), [no])
-  etichetta((0, -2.3), [fuori])
-}),
-canvas(length: 1cm, {
-  import draw: *
-  freccia((0, 1.9), (0, 1.6))
-  nodo((0, 1.3), [`espressione1`])
-  freccia((0, 1.0), (0, 0.3))
-  cond((0, 0), [`espressione2` ≠ 0 ?])
-  freccia((0, -0.3), (0, -1.0)); etichetta((0.25, -0.65), [sì])
-  nodo((0, -1.3), [comando])
-  freccia((0, -1.6), (0, -2.0))
-  nodo((0, -2.3), [`espressione3`])
-  freccia((-0.95, -2.3), (-1.3, -2.3), (-1.3, 0), (-0.95, 0))
-  freccia((0.95, 0), (1.3, 0), (1.3, -3.0)); etichetta((1.15, 0.2), [no])
-  etichetta((1.3, -3.2), [fuori])
-}),
-))
-
-Il `while` controlla l'espressione *prima* di ogni giro: se è falsa subito, il corpo non viene mai eseguito. Il `do-while` la controlla *dopo*: il corpo viene eseguito *almeno una volta*. Esempio: stampare le cifre di un numero, dall'ultima alla prima. `n % 10` è l'ultima cifra, `n /= 10` la toglie.
-
-#block(breakable: false, grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
-```c
-int n = 12345;
-while (n > 0) {
-    printf("%d\n", n % 10);
-    n /= 10;
-}
-```,
-{
-  let righe = ()
-  let n = 12345
-  while n > 0 {
-    righe += (str(n), str(calc.rem(n, 10)), str(calc.quo(n, 10)))
-    n = calc.quo(n, 10)
-  }
-  table(columns: 3, align: right, [`n`], [stampa `n % 10`], [poi `n` diventa], ..righe.map(raw), [`0`], table.cell(colspan: 2)[`n > 0` falso: fine])
-}))
-
-Nel `for`, `espressione1` viene valutata *una sola volta*, prima del primo giro. Poi, finché `espressione2` è vera, si esegue il corpo, e alla fine di ogni giro si valuta `espressione3`. È quindi solo un modo compatto di scrivere un `while`. Ognuna delle tre espressioni si può omettere, come la prima qui a destra:
-
-#grid(columns: (0.8fr, 0.8fr, 1.4fr), gutter: 1em,
-```c
-for (e1; e2; e3)
-    comando;
-```,
-```c
-e1;
-while (e2) {
-    comando;
-    e3;
-}
-```,
-```c
-int n = 12345;
-for (; n > 0; n /= 10)
-    printf("%d\n", n % 10);
-```)
-
-#nota[Attenzione: un ciclo può *non terminare mai*, se l'espressione non diventa mai 0.]
-
-Due istruzioni cambiano il giro dall'interno:
-- `break` causa l'*uscita immediata* dal ciclo (o dallo `switch`) che la contiene;
-- `continue` *termina il giro corrente* e passa al successivo. Può comparire solo in `for`, `while` e `do-while`.
-
-#grid(columns: (1fr, 1fr), gutter: 1em,
-[
-```c
-int a = 0;
-while (1) {            // sempre vero
-    if (a == 10) break;
-    a++;
-}                      // qui a vale 10
-```
-Il ciclo `while (1)` non finirebbe mai: è il `break` che lo chiude.],
-[
-```c
-for (int k = 0; k < 5; k++) {
-    if (k == 2) continue;
-    printf("%d ", k);
-}                      // 0 1 3 4
-```
-Con `k = 2` il `printf` viene saltato, ma il ciclo va avanti.])
-
-Infine lo `switch`, un'istruzione condizionale a *scelta multipla*. L'espressione deve essere di tipo *intero*; ogni `case` ha un'etichetta costante, e le etichette devono essere *uniche*. Il controllo salta all'etichetta uguale al valore dell'espressione, o a `default` se nessuna corrisponde.
-
-#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
-```c
-switch (espressione) {
-    case espr_costante:
-        comando;
-        break;
-    case espr_costante:
-        comando;
-        break;
-    default:
-        comando;
-}
-```,
-[
-Il `break` qui è essenziale: *senza `break` vengono eseguite anche le istruzioni dei `case` successivi*. Con `c = 2`:
 #block(inset: (left: 1em), text(9pt, {
   set par(leading: 0.8em)
   text(fill: gray)[`case 1: puts("uno");`] + linebreak()
@@ -1167,44 +960,8 @@ Il `break` qui è essenziale: *senza `break` vengono eseguite anche le istruzion
   [`case 3: puts("tre"); break;` #text(fill: red)[→ esce]] + linebreak()
   text(fill: gray)[`default: puts("altro");`]
 }))
-Stampa `due` e poi `tre`. Con `-Wextra` gcc avvisa: `this statement may fall through`.])
 
-#block(breakable: false)[
-Due esempi che mettono insieme cicli, `if` e `scanf`. A sinistra si legge una sequenza di interi chiusa da 0 (che non ne fa parte) e si contano positivi e negativi: `while`, perché la sequenza può essere vuota. A destra si fa indovinare un numero: `do-while`, perché un tentativo va chiesto *almeno una volta*.
-
-#grid(columns: (1fr, 1fr), gutter: 1em,
-```c
-int n, quanti = 0, positivi = 0;
-int negativi = 0, somma_positivi = 0;
-
-scanf("%d", &n);
-while (n != 0) {
-    quanti++;
-    if (n > 0) {
-        positivi++;
-        somma_positivi += n;
-    } else {
-        negativi++;
-    }
-    scanf("%d", &n);
-}
-```,
-```c
-int segreto = 37, tentativo;
-
-do {
-    printf("Inserisci un tentativo: ");
-    scanf("%d", &tentativo);
-
-    if (tentativo > segreto)
-        printf("Troppo grande\n");
-    else if (tentativo < segreto)
-        printf("Troppo piccolo\n");
-    else
-        printf("Indovinato!\n");
-} while (tentativo != segreto);
-```)
-]
+stampa `due` e `tre`. Con `-Wextra` gcc avvisa: `this statement may fall through`.
 
 == Array e tipi custom
 
@@ -1244,42 +1001,6 @@ for (i = 0; i < N; i++)
 [`&a[i]` è l'indirizzo della cella `i`: `scanf` scrive lì.
 
 `prodotto` alla fine vale \ `a[0]*b[0] + … + a[N-1]*b[N-1]`: \ l'ultimo indice è `N-1`, non `N`.])
-
-Secondo esempio: *invertire* un array senza usarne un secondo. Si scambia la prima cella con l'ultima, la seconda con la penultima, e così via *fino a metà*: andando oltre si rimetterebbe tutto com'era.
-
-#block(breakable: false, grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
-```c
-int i, j, scambio;
-int A[10];
-
-for (i = 0; i < 10; i++)
-    A[i] = i;
-
-for (i = 0; i < 10 / 2; i++) {
-    j = (10 - 1) - i;     // la cella opposta
-    scambio = A[i];
-    A[i] = A[j];
-    A[j] = scambio;
-}
-```,
-canvas(length: 1cm, {
-  import draw: *
-  let n = 10
-  let cella(k, y, v) = {
-    rect((k * 0.6, y), (k * 0.6 + 0.6, y + 0.5), stroke: 0.5pt, fill: if k < n / 2 { rgb("#eef4ff") } else { rgb("#fff3c4") })
-    content((k * 0.6 + 0.3, y + 0.25), text(8pt, raw(str(v))))
-  }
-  for k in range(n) { cella(k, 0, k); cella(k, -2.2, n - 1 - k) }
-  for i in range(calc.quo(n, 2)) {
-    let (x1, x2) = (i * 0.6 + 0.3, (n - 1 - i) * 0.6 + 0.3)
-    let h = 0.6 + (calc.quo(n, 2) - i) * 0.17
-    line((x1, 0.55), (x1, h), (x2, h), (x2, 0.55), stroke: 0.5pt + blu, mark: (start: "stealth", end: "stealth", scale: 0.6))
-  }
-  content((3, -0.4), text(7.5pt, fill: blu)[5 scambi: `A[i]` ↔ `A[9 - i]`])
-  line((3, -0.7), (3, -1.55), mark: (end: "stealth"), stroke: 0.6pt)
-})))
-
-Serve la variabile `scambio` perché `A[i] = A[j]` cancella il vecchio valore di `A[i]`: va messo da parte prima.
 
 Un array può avere più dimensioni. `int a[3][3];` riserva 9 interi contigui, e si usa per rappresentare una *matrice*. In memoria non c'è una griglia: gli array a più dimensioni sono salvati *per righe*, una riga dopo l'altra.
 
@@ -1466,3 +1187,1001 @@ for (i = 0; i < N; i++)
 4 32 impiegato
 ```
 ]
+
+== Funzioni e programmi su più file <funzioni>
+
+Le funzioni si usano come in JavaScript, con due differenze: *tipo di ritorno e tipi dei parametri vanno scritti*, e non si possono definire funzioni dentro altre funzioni. La prima eseguita è sempre `main`.
+
+#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+```c
+int max(int a, int b) {
+    if (a > b) return a;
+    return b;
+}
+void saluta(void) {   // niente valore
+    puts("ciao");
+}
+```,
+[
+- i parametri attuali vengono convertiti al tipo dei formali (casting implicito), così come il valore di `return` al tipo di ritorno;
+- se una funzione non `void` arriva in fondo *senza `return`*, chi usa il risultato legge un valore a caso.
+])
+
+#definizione[passaggio per valore][In C i parametri sono passati *per valore*: la funzione riceve una *copia*. Cambiare il parametro cambia la copia, non la variabile del chiamante. Vale anche per le `struct`, che in JavaScript invece sarebbero oggetti condivisi.]
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+```c
+void azzera(int x) {
+    x = 0;              // cambia la copia
+}
+
+int main(void) {
+    int n = 5;
+    azzera(n);
+    printf("%d\n", n);  // 5
+}
+```,
+canvas(length: 1cm, {
+  import draw: *
+  content((0, 1.2), text(8pt, fill: blu)[`main`])
+  rect((-0.6, 0), (0.6, 0.7), fill: rgb("#eef4ff")); content((0, 0.35), [`5`]); content((0, -0.3), text(8pt)[`n`])
+  content((3, 1.2), text(8pt, fill: verde)[`azzera`])
+  rect((2.4, 0), (3.6, 0.7), fill: rgb("#dff2e3")); content((3, 0.35), [`0`]); content((3, -0.3), text(8pt)[`x`])
+  line((0.7, 0.35), (2.3, 0.35), mark: (end: "stealth"), stroke: 0.6pt)
+  content((1.5, 0.65), text(7pt)[copia])
+  content((1.5, -0.9), text(7.5pt, fill: gray)[`x = 0` cambia solo la copia])
+}))
+
+Per cambiare davvero una variabile del chiamante servono i puntatori (@puntatori).
+
+Il compilatore legge il file dall'alto in basso, e quando incontra una chiamata deve già sapere com'è fatta la funzione. Se la definizione sta più in basso, o in un altro file, si mette prima un *prototipo* (o *dichiarazione*): tipo di ritorno, nome e tipi dei parametri, senza corpo.
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+int max(int, int);     // prototipo
+
+int main(void) {
+    printf("%d\n", max(3, 8));
+}
+
+int max(int a, int b) { // definizione
+    if (a > b) return a;
+    return b;
+}
+```,
+table(columns: 2,
+  [Manca], [Errore di chi],
+  [la *dichiarazione*], [del *compilatore*: \ `implicit declaration of function 'max'`],
+  [la *definizione*], [del *linker*: \ `undefined reference to 'max'`],
+))
+
+Questa differenza è la chiave dei programmi su *più file*. Per modularità e riuso il programma si divide in più file `.c`, che si compilano *separatamente* (ognuno diventa un `.o`) e poi il linker unisce. Le dichiarazioni di funzioni e costanti si raccolgono in un *file header* `.h`, incluso da chi le usa; le definizioni restano nei `.c`. `#include "max.h"`, con le virgolette, cerca il file nella directory corrente; con `< >` lo cerca fra le librerie di sistema.
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  let scatola(pos, t, c) = content(pos, box(inset: 5pt, stroke: 0.7pt, radius: 2pt, fill: c, text(8pt, t)))
+  scatola((0, 1.2), [`max.h` \ `int max(int, int);`], rgb("#fff3c4"))
+  scatola((-2.6, 0), [`main.c` \ `#include "max.h"`], rgb("#eef4ff"))
+  scatola((2.6, 0), [`max.c` \ definizione di `max`], rgb("#eef4ff"))
+  line((-1.3, 1.1), (-2.2, 0.45), mark: (end: "stealth"), stroke: 0.6pt)
+  content((-2.3, 0.95), text(7pt, fill: gray)[incluso])
+  scatola((-2.6, -1.4), [`main.o`], rgb("#dce8fb"))
+  scatola((2.6, -1.4), [`max.o`], rgb("#dce8fb"))
+  line((-2.6, -0.4), (-2.6, -1.1), mark: (end: "stealth")); content((-1.9, -0.75), text(7pt)[`gcc -c`])
+  line((2.6, -0.4), (2.6, -1.1), mark: (end: "stealth")); content((3.3, -0.75), text(7pt)[`gcc -c`])
+  scatola((0, -2.6), [eseguibile `main`], rgb("#dff2e3"))
+  line((-2.0, -1.6), (-0.8, -2.4), mark: (end: "stealth")); line((2.0, -1.6), (0.8, -2.4), mark: (end: "stealth"))
+  content((0, -1.8), text(7pt, fill: blu)[linker])
+}))
+
+```sh
+$ gcc -Wall main.c max.c -o main    # compila i due file e li collega
+```
+
+Con le funzioni e i file cambia anche la vita delle variabili. Ogni variabile ha una *classe di memorizzazione*, che decide *dove* sta e *chi* la vede (lo scope visto in @compilazione e nella sezione sui programmi C):
+
+#table(columns: (auto, auto, 1fr, 1fr),
+  [Variabile], [Dove sta], [Chi la vede], [Quanto vive],
+  [*locale* (classe `auto`, implicita)], [stack], [il suo blocco, fino alla `}`], [allocata all'ingresso del blocco, tolta all'uscita],
+  [*globale* (`extern` implicito)], [dati statici], [il suo file; gli altri file se la dichiarano `extern`], [tutto il programma],
+  [*globale `static`*], [dati statici], [*solo* il suo file], [tutto il programma],
+  [*locale `static`*], [dati statici], [il suo blocco], [tutto il programma: *mantiene il valore fra una chiamata e l'altra*],
+)
+
+Le funzioni sono sempre globali: non si può definire una funzione dentro un'altra. `static` ha quindi due usi diversi: su una globale *impedisce l'uso da altri file*; su una locale la rende *persistente*.
+
+L'esempio del prof li mostra tutti. `max.c` conta quante volte vince il primo numero (`countA`) e quante il secondo (`countB`); `main.c` legge coppie fino a due numeri uguali e alla fine vuole stampare `countA`:
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+// max.c
+int countA = 0;
+int countB = 0;
+
+int max(int a, int b) {
+    if (a > b) {
+        countA++;
+        return a;
+    }
+    countB++;
+    return b;
+}
+```,
+```c
+// main.c
+#include <stdio.h>
+#include "max.h"
+
+extern int countA;
+
+int main(void) {
+    int a = 0, b = 0;
+    do {
+        int a = 0;
+        scanf("%d %d", &a, &b);
+        printf("Max(%d,%d)=%d\n",
+               a, b, max(a, b));
+    } while (a != b);
+    printf("a>b %d volte\n", countA);
+}
+```)
+
+#table(columns: (auto, 1fr),
+  [Versione], [Cosa succede],
+  [senza `extern int countA;`], [errore del *compilatore*: `'countA' undeclared`. `main.c` non sa che `countA` esiste],
+  [con `extern int countA;`], [compila: `extern` dice "esiste, ma è definita in un altro file"],
+  [con `extern`, ma in `max.c` \ `static int countA = 0;`], [errore del *linker*: `undefined reference to 'countA'`. La `static` non si vede fuori da `max.c`],
+)
+
+#nota[*Quando ci fermiamo?* Dentro il `do` c'è un'altra `int a = 0`, che *copre* la `a` esterna. `scanf` scrive nella `a` interna, ma la condizione `a != b` sta fuori dal blocco e usa la `a` *esterna*, che resta 0. Quindi `3 3` *non* ferma il ciclo: si esce solo con `b = 0`.
+```sh
+3 3
+Max(3,3)=3          # continua!
+0 0
+Max(0,0)=0
+a>b 2 volte
+```]
+
+Ultima versione: i contatori diventano locali `static` dentro `max`, che li stampa a ogni chiamata. L'inizializzazione `= 0` avviene una volta sola, e le variabili non spariscono a fine chiamata: contano su tutte le chiamate.
+
+#grid(columns: (2fr, 1fr), gutter: 1em, align: horizon,
+```c
+int max(int a, int b) {
+    static int countA = 0;
+    static int countB = 0;
+    if (a > b) {
+        countA++;
+        printf("countA=%d, countB=%d\n",
+               countA, countB);
+        return a;
+    }
+    countB++;
+    printf("countA=%d, countB=%d\n",
+           countA, countB);
+    return b;
+}
+```,
+```sh
+3 5
+countA=0, countB=1
+Max(3,5)=5
+6 2
+countA=1, countB=1
+Max(6,2)=6
+3 8
+countA=1, countB=2
+Max(3,8)=8
+```)
+
+Nota l'ordine delle righe: `countA=…` esce *prima* di `Max(…)`, perché i parametri di `printf` (fra cui `max(a, b)`) vengono calcolati prima che `printf` stampi.
+
+= Puntatori e memoria
+
+#obiettivi(
+  [leggere e scrivere `&x`, `*p`, `p + i`, `a[i]`, e prevedere quando il compilatore dà errore (puntatore ↔ intero, tipi diversi, `void*`);],
+  [scrivere una funzione che modifica le variabili del chiamante (passaggio per indirizzo);],
+  [allocare con `malloc` e `calloc`, controllare `NULL`, liberare con `free`, e riconoscere memory leak e uso dopo `free`;],
+  [costruire una matrice dinamica per righe e liberarla;],
+  [lavorare con le stringhe: terminatore, `char s[]` contro `char *s`, `string.h`, `strtok`, `ctype.h`, lettura e conversione;],
+  [usare un puntatore a funzione e `qsort`;],
+  [cercare un errore con `stderr`, `assert`, `gdb` e `valgrind`.],
+)
+
+// riga di celle di memoria: ogni cella è (etichetta sotto, contenuto, colore)
+#let celle(x0, y0, voci, w: 1.1) = {
+  import draw: *
+  for (k, (et, val, col)) in voci.enumerate() {
+    let x = x0 + k * w
+    rect((x, y0), (x + w, y0 + 0.6), stroke: 0.5pt, fill: col)
+    content((x + w / 2, y0 + 0.3), text(8pt, val))
+    content((x + w / 2, y0 - 0.25), text(6.5pt, fill: gray, et))
+  }
+}
+
+== Puntatori <puntatori>
+
+Tutto quello che sta in memoria, dati e istruzioni, ha un *valore* e un *indirizzo*: lo abbiamo già usato con `&a` in `scanf` e con `%p` in `printf`. Un indirizzo è un numero intero che dipende dalla macchina.
+
+#definizione[puntatore][Un *puntatore* è una variabile che contiene un indirizzo di memoria. `int *p;` dichiara un puntatore a `int`: il *tipo* dice che cosa ci si aspetta di trovare a quell'indirizzo. Si inizializza con l'indirizzo di un'altra variabile, oppure con `NULL`, che vuol dire "nessun indirizzo".]
+
+Il puntatore è a sua volta una variabile, quindi ha anche lui un indirizzo. Due operatori lo collegano alla variabile puntata:
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+table(columns: 2,
+  [Operatore], [Cosa fa],
+  [`&x`], [*indirizzo* di `x`],
+  [`*p`], [*dereferenziazione*: il valore che sta all'indirizzo contenuto in `p`. Si può leggere e scrivere],
+),
+canvas(length: 1cm, {
+  import draw: *
+  circle((0, 0), radius: 0.4); content((0, 0), text(8pt)[`&i`]); content((0, 0.65), text(8pt)[`p`])
+  rect((2.4, -0.35), (3.1, 0.35)); content((2.75, 0), [3]); content((2.75, 0.6), text(8pt)[`i`])
+  line((0.4, 0), (2.4, 0), mark: (end: "stealth")); content((1.4, 0.3), text(8pt, fill: blu)[`p = &i`])
+  rect((2.4, -1.65), (3.1, -0.95)); content((2.75, -1.3), [3]); content((2.75, -1.95), text(8pt)[`j`])
+  content((0.6, -1.3), text(8pt, fill: blu)[`j = *p;`])
+  content((1.4, -2.4), text(7.5pt, fill: gray)[equivale a `j = i`])
+}))
+
+Il cerchio è il puntatore `p`, che contiene l'indirizzo di `i` (la freccia); `j = *p` va a leggere *ciò che sta in quell'indirizzo*, cioè il 3 di `i`. Lo stesso vale in scrittura, e più puntatori possono puntare alla stessa variabile:
+
+#grid(columns: (1.3fr, 1fr), gutter: 1em, align: horizon,
+```c
+double a = 0;
+double *aPtr = &a, *aPtr1 = &a;
+
+*aPtr = 10;
+printf("%f\n", a);   // 10.000000
+*aPtr1 = 20;
+printf("%f\n", a);   // 20.000000
+```,
+[Nella dichiarazione l'asterisco va ripetuto per ogni puntatore: `double *aPtr, *aPtr1`. Nell'espressione `*aPtr = 10` invece l'asterisco è la dereferenziazione: scrive 10 *dentro `a`*.])
+
+Un puntatore contiene un numero intero, ma *il C non lo tratta come un intero*: si usa nelle espressioni fra puntatori, non mescolato con altri tipi interi.
+
+```c
+int b = 1;
+int c = 22;
+int *a = &c;
+*a = b + *a;    // ok: cambia c, che diventa 23
+a = b + *a;     // NO: a è un puntatore, non un intero
+*a = b + a;     // NO: b + a è un puntatore, e *a è un int
+int *a = c;     // NO: a un puntatore non si assegna un intero
+```
+
+Le tre righe sbagliate danno errore: `makes pointer from integer without a cast` o `makes integer from pointer without a cast`.
+
+#nota[*Il tipo del puntatore conta*: dice quanti byte leggere e come interpretarli. Puntare un `double` con un `int *` (o il contrario) dà il warning `incompatible pointer types` (con un gcc recente è un errore), e il valore letto è senza senso:
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+int a = 15;
+double *aPtr = &a;
+printf("%f\n", *aPtr);  // 0.000000
+```,
+```c
+double a = 15.6;
+int *aPtr = &a;
+printf("%d\n", *aPtr);  // 858993459
+```)]
+
+#nota[Dereferenziare un puntatore che vale `NULL`, o che punta a memoria non allocata, dà un *errore a tempo di esecuzione*: compila, ma quando gira termina con `Segmentation fault`.]
+
+Ecco a cosa servono. I parametri di una funzione vengono allocati sullo stack della funzione chiamata, e sono copie (@funzioni). Ma se le si passa l'*indirizzo* di una variabile, la funzione può modificare quella variabile, anche se sta nell'ambiente del chiamante. È il *passaggio per indirizzo*, ed è il motivo per cui `scanf` vuole `&a`.
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+```c
+void swap(int *x, int *y) {
+    int var = *x;
+    *x = *y;
+    *y = var;
+}
+
+int main(void) {
+    int a = 5, b = 10;
+    printf("a=%d,b=%d\n", a, b);  // a=5,b=10
+    swap(&a, &b);
+    printf("a=%d,b=%d\n", a, b);  // a=10,b=5
+}
+```,
+canvas(length: 1cm, {
+  import draw: *
+  content((0.55, 1.1), text(8pt, fill: blu)[stack di `main`])
+  celle(-0.55, 0, (([`a`], [5 → 10], rgb("#eef4ff")), ([`b`], [10 → 5], rgb("#eef4ff"))), w: 1.1)
+  content((0.55, -1.0), text(8pt, fill: verde)[stack di `swap`])
+  celle(-0.55, -2.1, (([`x`], [`&a`], rgb("#dff2e3")), ([`y`], [`&b`], rgb("#dff2e3"))), w: 1.1)
+  line((0, -1.5), (0, -0.05), mark: (end: "stealth"), stroke: 0.6pt + red)
+  line((1.1, -1.5), (1.1, -0.05), mark: (end: "stealth"), stroke: 0.6pt + red)
+}))
+
+`x` e `y` sono copie degli *indirizzi* (le frecce rosse), ma `*x` e `*y` sono proprio `a` e `b`. Con `void swap(int x, int y)` lo scambio avverrebbe sulle copie, e `a`, `b` resterebbero 5 e 10.
+
+== Array e puntatori <array-puntatori>
+
+Un array è un insieme *contiguo* di elementi dello stesso tipo. `int a[10];` fa tre cose: crea una variabile `a`, alloca sullo stack 10 interi contigui, e mette in `a` l'indirizzo dell'inizio di quella zona. Per questo il prof dice che `a` è "in realtà un puntatore": vale `a == &a[0]`.
+
+Dato l'indirizzo del primo elemento, gli altri si trovano con l'*aritmetica dei puntatori*. Sommare `i` a un puntatore vuol dire *avanzare di `i` elementi*, non di `i` byte: il compilatore moltiplica da solo per la dimensione del tipo.
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  for k in range(5) {
+    let x = k * 1.6
+    rect((x, 0), (x + 1.6, 0.6), stroke: 0.5pt, fill: rgb("#eef4ff"))
+    content((x + 0.8, 0.3), text(8pt, raw("a[" + str(k) + "]")))
+    content((x + 0.8, -0.25), text(6.5pt, fill: gray, raw("…ec" + str(k * 4))))
+    content((x + 0.8, 0.95), text(8pt, fill: blu, raw(if k == 0 { "a" } else { "a + " + str(k) })))
+  }
+  content((9, 0.3), anchor: "west", text(8pt)[`int`: 4 byte ciascuno])
+}))
+
+#table(columns: (auto, auto, 1fr),
+  [In C si scrive], [È uguale a], [Indirizzo in byte],
+  [`a + i`], [`&a[i]`], [indirizzo di `a` + `i · sizeof(int)`],
+  [`*(a + i)`], [`a[i]`], [],
+  [`&a[i][j]`, matrice con `n_col` colonne], [], [indirizzo di `a` + `(i · n_col + j) · sizeof(int)`],
+)
+
+#nota[Attenzione a non moltiplicare due volte. In C si scrive `a + i`, *non* `a + i * sizeof(int)`: quest'ultimo avanzerebbe di `4i` elementi. La moltiplicazione per `sizeof` serve solo a calcolare l'indirizzo in byte, come nell'ultima colonna. Lo conferma la stampa: `a` e `a + 1` distano 4 byte.]
+
+Quando si passa un array a una funzione *viene passato il puntatore al primo elemento*, non una copia. Quindi:
+- un parametro di tipo puntatore si usa come un array: `int *v` e `int v[]` come parametro sono la stessa cosa, e `v[i]` funziona;
+- la funzione *può modificare* l'array del chiamante;
+- la funzione non sa quanto è lungo: la dimensione va passata a parte.
+
+Per un array a più dimensioni bisogna scrivere *tutte le dimensioni tranne la prima*, perché servono per saltare le righe (come visto per le matrici): `int f(int a[][5][3]) {...}`.
+
+#nota[`a` *non* è però una variabile puntatore come le altre. `sizeof(a)` dà 40 (tutto l'array), mentre `sizeof` di un `int *` dà 8. E `a` non si può riassegnare: `a = b;` fra due array dà `assignment to expression with array type`.]
+
+== Allocazione statica e dinamica <allocazione>
+
+Finora la memoria la decideva il compilatore. Vediamo meglio le zone in cui è divisa (@compilazione):
+
+#grid(columns: (auto, 1fr), gutter: 1.5em, align: horizon,
+pila(larghezza: 3cm,
+  ([*codice*], rgb("#e6dcf2")),
+  ([*dati statici*], rgb("#fff3c4")),
+  ([*heap*], rgb("#dce8fb")),
+  ([*stack*], rgb("#dff2e3")),
+),
+[
+  - *dati statici*: quello che si sa già a tempo di compilazione, cioè le variabili globali e le locali `static`;
+  - *stack*: un *record di attivazione* per ogni blocco di codice, comprese le chiamate di funzione, con lo spazio per le variabili locali;
+  - *heap*: dati *dinamici*, allocati a tempo di esecuzione e raggiungibili tramite puntatori. È *frammentato*: i pezzi non sono per forza vicini.
+])
+
+Partiamo da due dichiarazioni:
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+[
+- `int a;` alloca `sizeof(int)` byte. Il valore è *non definito*.
+- `int *aPtr;` alloca `sizeof(int*)` byte per il puntatore. Sono non definiti sia il suo valore (a cosa punta) sia `*aPtr`.
+
+Con l'*allocazione statica* le si collega a mano: `a = 10; aPtr = &a;` e ora `*aPtr` vale 10.],
+canvas(length: 1cm, {
+  import draw: *
+  celle(0, 1.2, (([`a`], [`???`], rgb("#dff2e3")), ([`aPtr`], [`???`], rgb("#dff2e3"))), w: 1.3)
+  line((1.95, 1.85), (2.4, 2.4), mark: (end: "stealth"), stroke: (dash: "dashed")); content((2.6, 2.6), text(8pt)[`??`])
+  content((1.3, 0.55), text(7.5pt, fill: gray)[dopo le dichiarazioni])
+  celle(0, -0.8, (([`a`], [`10`], rgb("#dff2e3")), ([`aPtr`], [`&a`], rgb("#dff2e3"))), w: 1.3)
+  bezier((1.95, -0.15), (0.65, -0.15), (1.3, 0.25), mark: (end: "stealth"), stroke: 0.6pt + red)
+  content((1.3, -1.45), text(7.5pt, fill: gray)[allocazione statica])
+}))
+
+L'*allocazione dinamica* invece chiede memoria nuova sull'heap mentre il programma gira, con le funzioni della libreria `stdlib.h`:
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[```c
+int *aPtr;
+aPtr = (int*) malloc(sizeof(int));
+```
+`aPtr` ora punta a un `int` sull'heap; `*aPtr` resta *non definito* finché non ci scrivi.],
+[```c
+int *aPtr;
+aPtr = (int*) calloc(1, sizeof(int));
+```
+Come sopra, ma la memoria è *inizializzata a 0*: `*aPtr` vale 0.])
+
+#table(columns: (auto, 1fr),
+  [Funzione], [Cosa fa],
+  [`void *malloc(size_t n);`], [alloca `n` *byte* e restituisce l'indirizzo dove sono],
+  [`void *calloc(size_t n, size_t size);`], [alloca un array di `n` oggetti grandi `size`, mette *0* in ogni posizione e restituisce l'indirizzo del primo],
+  [`void free(void *p);`], [libera la memoria allocata con `malloc` o `calloc`],
+)
+
+Entrambe restituiscono:
+- un puntatore `void*`, che va convertito con un casting al tipo giusto (`(int*)`);
+- `NULL` se non riescono ad allocare: *bisogna sempre controllare* che il risultato sia `!= NULL` prima di usarlo.
+
+`size_t` è il tipo intero senza segno restituito da `sizeof`.
+
+#definizione[`void*`][Un `void*` è un *puntatore generico*: un indirizzo senza un tipo. Si usa anche nei prototipi di funzioni che devono accettare puntatori di qualsiasi tipo. Siccome non dice cosa c'è all'indirizzo, *non si può dereferenziare*: prima si fa il casting a un tipo concreto.]
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+int a = 10;
+void *aP = &a;
+printf("%d\n", *aP);         // errore
+```,
+```c
+int a = 10;
+void *aP = &a;
+printf("%d\n", *(int*)aP);   // 10
+```)
+
+La memoria dinamica resta occupata finché non la si libera con `free(aPtr);`, da fare quando l'oggetto non serve più. Gli errori comuni:
+- *memory leak*: non liberare la memoria e poi perdere il puntatore. Quella memoria non si può più né usare né liberare, e se succede in un ciclo il programma può esaurire la memoria;
+- liberare memoria allocata in modo statico (`free(&a)`);
+- usare un puntatore dopo averlo liberato.
+
+#table(columns: (1fr, 1fr),
+  [Vantaggi dell'allocazione dinamica], [Svantaggi],
+  [più controllo sulla memoria usata, meno spreco, programmi più generici (la dimensione si decide mentre gira), più modularità e passaggio di parametri più facile], [la gestione della memoria è in più, a carico tuo; rischio di memory leak],
+)
+
+== Array di puntatori e matrici dinamiche <matrici>
+
+I puntatori sono variabili, quindi se ne possono fare array:
+- `int *ps[10];` è un array di 10 puntatori, *non inizializzati*: bisogna assegnare un valore a ognuno;
+- `int **ps = (int**) malloc(n * sizeof(int*));` è un array *dinamico* di `n` puntatori a `int`, non inizializzati; con `calloc(n, sizeof(int*))` partono tutti a `NULL`.
+
+`int **` si legge "puntatore a puntatore a `int`". Se ogni `ps[i]` punta a sua volta a un array allocato con `malloc`, `ps` si usa come una matrice: `ps[i][j]` è l'elemento `j` della riga `i`. È la *matrice dinamica allocata per righe*:
+
+```c
+int **a = (int**) malloc(3 * sizeof(int*));
+for (int i = 0; i < 3; i++)
+    a[i] = (int*) malloc(3 * sizeof(int));
+```
+
+#grid(columns: (1fr, auto), gutter: 1em, align: horizon,
+[A confronto con `int a[3][3];`: a destra, in alto, la versione dinamica. In giallo l'array dei 3 puntatori; ogni freccia rossa va a una riga allocata a parte, in un punto qualunque dell'heap. In basso la statica, 9 `int` uno dopo l'altro.],
+canvas(length: 1cm, {
+  import draw: *
+  content((0.6, 1.1), text(8pt, fill: blu)[dinamica: righe sparse sull'heap])
+  for i in range(3) {
+    rect((0, -i * 0.6), (0.7, -i * 0.6 + 0.6), fill: rgb("#fff3c4"), stroke: 0.5pt)
+    content((0.35, -i * 0.6 + 0.3), text(7pt, raw("a[" + str(i) + "]")))
+    let x = 1.6 + i * 0.5
+    let y = 0.4 - i * 0.9
+    for k in range(3) { rect((x + k * 0.5, y), (x + k * 0.5 + 0.5, y + 0.45), fill: rgb("#dce8fb"), stroke: 0.5pt) }
+    line((0.7, -i * 0.6 + 0.3), (x, y + 0.22), mark: (end: "stealth"), stroke: 0.5pt + red)
+  }
+  content((0.6, -2.6), text(8pt, fill: verde)[statica: 9 `int` contigui])
+  for k in range(9) { rect((k * 0.4 - 0.4, -3.3), (k * 0.4, -2.9), fill: rgb("#dff2e3"), stroke: 0.5pt) }
+}))
+
+Rispetto a `int a[N][M]`:
+- l'organizzazione in memoria è diversa: le righe non sono contigue;
+- ogni riga può avere *una lunghezza diversa*, senza sprechi;
+- si passa a una funzione come `int **` *senza conoscere `M`*, mentre `int a[][M]` vuole la seconda dimensione.
+
+Le righe si liberano una per una, e *prima* dell'array dei puntatori: liberando prima `a`, gli indirizzi delle righe andrebbero persi (memory leak). La soluzione del prof a un esercizio: leggere `M`, `N` e una matrice `M × M`, e stampare la somma della sottomatrice `N × N` in alto a sinistra (con le righe `(1,2,3,4)`, `(5,6,7,8)`, … e `N = 2` dà `1 + 2 + 5 + 6 = 14`).
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+int sum_submatrix(int **matrix, int n) {
+    int i, j, sum = 0;
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            sum += matrix[i][j];
+    return sum;
+}
+```,
+```c
+A = malloc(m * sizeof(int *));
+if (A == NULL) return 1;
+for (i = 0; i < m; i++) {
+    A[i] = malloc(m * sizeof(int));
+    if (A[i] == NULL) {
+        // libera le righe già allocate
+        while (i > 0) free(A[--i]);
+        free(A);
+        return 1;
+    }
+}
+// ... lettura con scanf("%d", &A[i][j])
+printf("%d\n", sum_submatrix(A, n));
+for (i = 0; i < m; i++) free(A[i]);
+free(A);
+```)
+
+Qui `malloc` è senza casting: in C un `void*` si converte da solo in qualunque puntatore, quindi `(int**)` si può omettere.
+
+#esercizio[diagonale][Leggere `M` e una matrice quadrata `M × M`, allocata dinamicamente per righe. Con una funzione, cambiare il segno degli elementi sulla diagonale principale e stampare la matrice, una riga per riga di output. `(1,2,3), (4,5,6), (7,8,9)` diventa `(-1,2,3), (4,-5,6), (7,8,-9)`.]
+
+== Stringhe <stringhe>
+
+In C non c'è un tipo stringa come in JavaScript: una *stringa è un array di `char` terminato da `'\0'`*, il carattere nullo (valore 0). Ogni funzione sulle stringhe va avanti finché non trova `'\0'`: è l'unico modo per sapere dove finiscono. Ci sono due modi di crearne una, e *non sono la stessa cosa*:
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[```c
+char s1[] = "ciao";
+s1[2] = 'A';
+printf("s1=%s\n", s1);   // s1=ciAo
+```
+Un *array* di 5 `char` sullo stack, inizializzato con una copia di `"ciao"`: si può modificare.],
+[```c
+char *s1 = "ciao";
+s1[2] = 'A';             // crash
+printf("s1=%s\n", s1);
+```
+Un *puntatore* a una stringa costante, che sta in una zona di sola lettura: scriverci fa terminare il programma.])
+
+Attenzione a copiare: l'assegnamento fra puntatori copia *l'indirizzo*, non i caratteri, e da lì in poi i due nomi modificano lo stesso array. Per una copia vera si copiano i caratteri uno a uno, *terminatore compreso*:
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+[```c
+char s1[] = "ciao";
+char *s2 = s1;     // stesso array
+s2[2] = 'A';
+// s1=ciAo, s2=ciAo
+```
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  celle(0, 0, ("ciao\\0".clusters().map(c => ([], raw(c), rgb("#eef4ff")))).slice(0, 4) + (([], raw("\\0"), rgb("#fde2e2")),), w: 0.5)
+  content((-0.5, 1.0), text(8pt)[`s1`]); line((-0.3, 0.85), (0.1, 0.65), mark: (end: "stealth"), stroke: 0.5pt)
+  content((0.9, 1.1), text(8pt)[`s2`]); line((0.8, 0.95), (0.3, 0.65), mark: (end: "stealth"), stroke: 0.5pt + red)
+}))],
+[```c
+char s1[] = "ciao";
+char s2[5];
+int i = 0;
+while (s1[i] != '\0') {
+    s2[i] = s1[i];
+    i++;
+}
+s2[i] = '\0';      // non dimenticarlo
+s2[2] = 'A';       // s1=ciao, s2=ciAo
+```])
+
+Senza il `'\0'` finale, `printf("%s", s2)` continuerebbe a leggere la memoria dopo l'array. Le funzioni già pronte stanno in `string.h`:
+
+#table(columns: (auto, 1fr),
+  [Funzione], [Cosa fa],
+  [`strlen(str)`], [lunghezza, *senza* il terminatore: `strlen("ciao")` = 4 (`sizeof` dell'array `"ciao"` = 5)],
+  [`strcpy(dest, src)`], [copia `src` in `dest` e restituisce `dest`. `dest` deve essere abbastanza grande],
+  [`strcmp(s1, s2)`], [confronto lessicografico: *negativo* se `s1` viene prima, *0* se uguali, *positivo* se dopo. Non si usa `==`, che confronterebbe gli indirizzi],
+  [`strcat(dest, src)`], [aggiunge una copia di `src` in fondo a `dest`],
+  [`strncpy`, `strncmp`, `strncat`], [come sopra, ma solo sui primi `n` caratteri],
+  [`strtok(str, delim)`], [divide la stringa in *token* separati dai caratteri di `delim`],
+)
+
+`strtok` si usa in due tempi: la prima chiamata riceve la stringa, le successive `NULL` (vuol dire "continua da dove eri rimasto"). Restituisce un puntatore al token successivo, o `NULL` quando sono finiti. Per farlo *modifica la stringa originale*: sostituisce ogni separatore con `'\0'`, e `tok` punta dentro la stringa stessa.
+
+#grid(columns: (1.2fr, 1fr), gutter: 1em, align: horizon,
+```c
+char s[100], *tok;
+scanf("%[^\n]", s);         // 12,13,14,15
+tok = strtok(s, ",");
+printf("Token:%s\n", tok);
+while ((tok = strtok(NULL, ",")) != NULL)
+    printf("Token:%s\n", tok);
+printf("Stringa:%s\n", s);
+```,
+```sh
+Token:12
+Token:13
+Token:14
+Token:15
+Stringa:12
+```)
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  let c = "12,13,14,15".clusters()
+  celle(0, 0, c.enumerate().map(((k, x)) => if x == "," { ([], raw("\\0"), rgb("#fde2e2")) } else { ([#k], raw(x), rgb("#eef4ff")) }) + (([], raw("\\0"), rgb("#fde2e2")),), w: 0.6)
+  for (k, n) in ((0, "1°"), (3, "2°"), (6, "3°"), (9, "4°")) {
+    line((k * 0.6 + 0.3, 1.1), (k * 0.6 + 0.3, 0.65), mark: (end: "stealth"), stroke: 0.6pt + blu)
+    content((k * 0.6 + 0.3, 1.3), text(7pt, fill: blu)[`tok` #n])
+  }
+  content((3.6, -0.75), text(7.5pt, fill: gray)[dopo `strtok`: le virgole sono diventate `'\0'`, quindi `s` ora è solo `"12"`])
+}))
+
+Per questo `Stringa:12` alla fine, e per questo `strtok` su `char *s = "12,13,14,15"` (sola lettura) dà `Segmentation fault`.
+
+Per i singoli caratteri c'è `ctype.h`. Le funzioni di controllo restituiscono un valore *diverso da zero* se la condizione è vera:
+
+#table(columns: (auto, 1fr),
+  [Funzione], [Vero se `c` è…],
+  [`isalpha(c)`, `isupper(c)`, `islower(c)`], [una lettera, maiuscola, minuscola],
+  [`isdigit(c)`, `isalnum(c)`, `isspace(c)`], [una cifra, cifra o lettera, uno spazio bianco],
+  [`toupper(c)`, `tolower(c)`], [convertono il carattere se possono, altrimenti lo restituiscono uguale: `toupper('7')` = `'7'`],
+)
+
+Per leggere caratteri e stringhe, e per convertire una stringa in numero:
+
+#table(columns: (auto, 1fr),
+  [Funzione], [Cosa fa],
+  [`scanf("%c", &c)`], [un carattere],
+  [`scanf("%s", s)`], [una parola: si ferma al primo spazio. Niente `&`: `s` è già un indirizzo],
+  [`scanf("%[^\n]", s)`], [tutta la riga fino all'a capo, spazi compresi],
+  [`getchar()`], [un carattere da stdin],
+  [`fgets(str, num, stream)`], [al più `num-1` caratteri da `stream` (per la tastiera `stdin`), poi aggiunge `'\0'`],
+  [`sscanf(s, format, ...)`], [come `scanf`, ma legge dalla stringa `s` invece che da stdin],
+  [`atoi(str)`, `atol(str)`, `atof(str)`], [stringa → `int`, `long`, `double` (in `stdlib.h`)],
+)
+
+#nota[Con `scanf("%s", s)` nessuno controlla la lunghezza: se la parola è più lunga dell'array, si scrive oltre la fine. Nelle soluzioni del prof si limita con la larghezza: `scanf("%1000s", buffer)` con `char buffer[1001]` (uno in più per il `'\0'`).]
+
+#esercizio[concatenazione][Leggere lunghezza e contenuto di due stringhe (al più 1000 caratteri), allocando per ciascuna esattamente lo spazio indicato più il terminatore. Scrivere `char* my_strcat1(char *s1, char *s2)`, che alloca una *nuova* stringa con la concatenazione, senza usare `strcat` o `strncat`, e stamparla. Lunghezze 10 e 3, stringhe `ciaoatutti` e `voi` → `ciaoatuttivoi`.]
+
+#esercizio[anagrammi][Scrivere `int anagramma(char *s1, char *s2)`, che restituisce 1 se le due stringhe sono anagrammi e 0 altrimenti, e un programma che la usa. Suggerimento: contare in array di 256 elementi le occorrenze di ogni carattere (indice `(unsigned char) s[i]`). `pizza` e `pazzi` sono anagrammi.]
+
+#esercizio[prefisso comune][`LCP(s1, s2)` è la lunghezza del più lungo prefisso comune a `s1` e `s2`. Leggere `n` e poi `n` stringhe di al più 500 caratteri; per ogni `0 < i < n` stampare `LCP(S[i-1], S[i])`. `LCP(AABB, AAZZ) = 2`, `LCP(mississippi, missi) = 5`, `LCP(laboratorio, laboratoriale) = 10`.]
+
+#esercizio[suffissi ordinati][Leggere una stringa di al più 1000 caratteri e stampare tutti i suoi suffissi, uno per riga, in ordine lessicografico. Si può usare `qsort` (prossima sezione). Da `ciao`: `ao`, `ciao`, `iao`, `o`.]
+
+== Puntatori a funzioni <puntatori-funzione>
+
+In JavaScript una funzione è un valore e si passa come qualsiasi altro. In C le funzioni *non sono variabili*, ma se ne può prendere un *puntatore*, da passare come parametro o da usare per chiamare la funzione:
+
+#grid(columns: (1.2fr, 1fr), gutter: 1em, align: horizon,
+```c
+int sum(int x, int y) { return x + y; }
+int mul(int x, int y) { return x * y; }
+
+int main(void) {
+    int (*f)(int, int);
+    f = sum;
+    printf("%d\n", (*f)(3, 6));     // 9
+    f = mul;
+    printf("%d\n", (*f)(3, 6));     // 18
+
+    int (*g[2])(int, int) = {sum, mul};
+    printf("%d\n", (*g[1])(3, 6));  // 18
+}
+```,
+[
+`int (*f)(int, int)` si legge: `f` è un puntatore a una funzione che prende due `int` e restituisce un `int`. Le parentesi attorno a `*f` servono: `int *f(int, int)` sarebbe invece il prototipo di una funzione che restituisce un `int *`.
+
+Il nome di una funzione, da solo, è il suo indirizzo: `f = sum`. `g` è un *array di puntatori a funzioni*.
+])
+
+L'uso tipico è `qsort` di `stdlib.h`, che ordina un array di *qualsiasi tipo*. Per essere generica usa `void*` e si fa passare la funzione di confronto:
+
+```c
+void qsort(void *base, size_t num, size_t size,
+           int (*compar)(const void *, const void *));
+```
+
+- `base` è l'array, `num` il numero di elementi, `size` la dimensione di un elemento: `qsort` non conosce il tipo, quindi sposta blocchi di `size` byte;
+- `compar` riceve gli *indirizzi* di due elementi e restituisce, come `strcmp`, un numero negativo, zero o positivo.
+
+#grid(columns: (1.2fr, 1fr), gutter: 1em, align: horizon,
+```c
+int compInt(const void *a, const void *b) {
+    int *ac = (int *) a;
+    int *bc = (int *) b;
+    return *ac - *bc;
+}
+
+int a[5] = {17, 9, 2, 43, 0};
+qsort(a, 5, sizeof(int), compInt);
+// 0 2 9 17 43
+```,
+[È lo stesso schema di `array.sort((a, b) => a - b)` in JavaScript. La differenza è che `compInt` riceve dei `void*`, e deve prima convertirli al tipo vero per poterli dereferenziare. `const` dice che la funzione non modificherà gli elementi.])
+
+== Trovare gli errori <debugging>
+
+Il primo modo di cercare un errore è stampare i valori delle variabili. Ma `printf` scrive su `stdout`, che è *bufferizzato*: il testo può restare in un buffer invece di comparire subito, e se il programma termina per un errore quella stampa va persa. `stderr` invece non aspetta, e `fprintf` permette di scegliere il flusso:
+
+```c
+fprintf(stderr, "Messaggio\n");
+```
+
+Durante lo sviluppo si può controllare che lo stato sia quello atteso con la macro `assert` di `assert.h`. Riceve un'espressione intera: se è vera l'esecuzione continua, se è falsa stampa un errore su `stderr` e *termina subito*.
+
+#grid(columns: (1fr, 1.2fr), gutter: 1em, align: horizon,
+```c
+#include <stdio.h>
+#include <assert.h>
+
+int main(void) {
+    int x;
+    scanf("%d", &x);
+    assert(x > 0);
+    printf("Hai inserito %d\n", x);
+}
+```,
+[
+```sh
+$ ./main
+-3
+main: main.c:7: main: Assertion `x > 0' failed.
+```
+Per disattivare tutti gli `assert` si definisce la macro `NDEBUG` *prima* dell'`include`: `#define NDEBUG`. Allora con `-3` il programma stampa `Hai inserito -3`.
+])
+
+Stampe e `assert` non bastano sui programmi grandi. Ci sono due strumenti, e per entrambi si compila con `-g`:
+
+```sh
+$ gcc -g -Wall -pedantic main.c -o main
+$ gdb main                              # gdb [opzioni] eseguibile
+$ valgrind --leak-check=full ./main     # valgrind ./eseguibile [argomenti]
+```
+
+*gdb* esegue il programma in modo controllato: lo si ferma in certi punti per guardare le variabili.
+- un *breakpoint* è un punto del codice dove fermarsi;
+- un *watchpoint* è una variabile da sorvegliare: il programma si ferma quando cambia. Funziona solo dentro lo scope della variabile.
+
+#table(columns: (auto, 1fr),
+  [Comando gdb], [Cosa fa],
+  [`run` / `quit`], [avvia il programma / chiude gdb],
+  [`b 6`, `b main.c:6`, `b push`], [breakpoint alla riga 6, alla riga 6 di `main.c`, alla prima istruzione della funzione `push`],
+  [`watch a`], [watchpoint sulla variabile `a`],
+  [`delete n`, `enable n`, `disable n`], [toglie, attiva, disattiva il breakpoint o watchpoint numero `n`],
+  [`p x`, `p &x`], [stampa il valore di `x`, il suo indirizzo],
+  [`p a[3]@5`], [stampa 5 valori dell'array `a` a partire da `a[3]`],
+  [`bt`], [_backtrace_: la pila dei record di attivazione (chi ha chiamato chi)],
+  [`x`], [stampa il contenuto di un indirizzo di memoria],
+  [`continue`], [riparte fino al prossimo breakpoint],
+  [`next`], [un'istruzione avanti, *senza entrare* nelle funzioni chiamate],
+  [`step`], [un'istruzione avanti, *entrando* nelle chiamate],
+  [`finish`], [fino all'uscita dalla funzione corrente],
+)
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  rect((0, 0), (2.4, 0.6), fill: rgb("#dce8fb")); content((0.5, 0.3), text(7pt)[`main`])
+  rect((2.4, 0), (2.7, 0.6), fill: rgb("#f5b7b1")); content((2.55, 0.3), text(6pt)[BP])
+  rect((2.7, 0), (6, 0.6), fill: rgb("#dce8fb"))
+  rect((6, 0), (9, 0.6), fill: rgb("#dff2e3")); content((7.5, 0.3), text(7pt)[funzione `f`])
+  rect((9, 0), (10, 0.6), fill: rgb("#dce8fb")); content((9.5, 0.3), text(7pt)[`main`])
+  rect((10, 0), (10.3, 0.6), fill: rgb("#f5b7b1")); content((10.15, 0.3), text(6pt)[BP])
+  rect((10.3, 0), (10.8, 0.6), fill: rgb("#dce8fb"))
+  content((2.55, 1.2), text(7pt)[`run`]); line((2.55, 1.0), (2.55, 0.65), mark: (end: "stealth"))
+  content((5.6, 1.2), text(7pt)[`next`]); line((5.6, 1.0), (5.6, 0.65), mark: (end: "stealth"))
+  bezier((5.9, 0.65), (9.1, 0.65), (7.5, 1.8), mark: (end: "stealth"), stroke: 0.6pt + blu); content((7.5, 1.6), text(7pt, fill: blu)[`next` salta `f`])
+  content((6.1, -0.5), text(7pt)[`step`]); line((6.1, -0.3), (6.1, -0.05), mark: (end: "stealth"))
+  bezier((7.5, -0.05), (9.1, -0.05), (8.3, -0.7), mark: (end: "stealth"), stroke: 0.6pt + verde); content((8.3, -0.85), text(7pt, fill: verde)[`finish`])
+  bezier((2.8, -0.05), (10.1, -0.05), (6.5, -1.9), mark: (end: "stealth"), stroke: 0.6pt + red); content((4.2, -1.3), text(7pt, fill: red)[`continue`: al prossimo BP])
+}))
+
+Lo schema mostra un'esecuzione: la barra è il programma nel tempo, BP sono i breakpoint. `run` parte e si ferma al primo BP. `next` avanza di un'istruzione, e se l'istruzione chiama `f` la esegue tutta in un colpo. `step` invece entra in `f`, e da dentro `finish` porta all'uscita. `continue` corre fino al prossimo BP.
+
+*valgrind* esegue il programma tenendo traccia di *tutti gli accessi alla memoria*, e stampa un messaggio quando la memoria è usata male: variabili non inizializzate, stack overflow, memory leak (con `--leak-check=full`). Nessuno dei due strumenti entra nel codice di una libreria già compilata: le funzioni vanno testate prima di metterle in una libreria.
+
+= Strutture dati
+
+#obiettivi(
+  [allocare una `struct` sull'heap e usarne i campi con `->`;],
+  [costruire, scorrere e liberare una lista concatenata, inserendo in testa e in coda;],
+  [inserire in un albero binario di ricerca, visitarlo in ordine e liberarlo, con funzioni ricorsive.],
+)
+
+== Liste concatenate <liste>
+
+In JavaScript oggetti e array crescono da soli e la memoria la libera il garbage collector. In C una struttura che cresce si costruisce a mano: ogni pezzo è una `struct` allocata con `malloc`, e i pezzi sono collegati da puntatori.
+
+Per prima cosa serve un puntatore a `struct`. Per esempio una pila (`Stack`, un array più un intero) allocata sull'heap:
+
+#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
+```c
+typedef struct {
+    int elements[N];
+    int n;
+} Stack;
+
+Stack *s = (Stack*) malloc(sizeof(Stack));
+s->n = 0;
+```,
+[Ai campi si accede con l'operatore *`->`*: `s->n` è una scorciatoia per `(*s).n`, cioè "il campo `n` della `struct` puntata da `s`". Le parentesi servono perché `.` lega più di `*`: `*s.n` vorrebbe dire `*(s.n)`.
+
+`.` si usa su una `struct`, `->` su un *puntatore* a `struct`.])
+
+Una `struct` può contenere un puntatore a una `struct` del suo stesso tipo (*self-referential struct*). È quello che serve per una *lista concatenata*: ogni elemento contiene un valore e il riferimento all'elemento *successivo*; la lista si gestisce tenendo un puntatore al *primo* elemento, la testa (`head`). L'ultimo ha `next = NULL`.
+
+#grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
+```c
+struct n {
+    int val;
+    struct n *next;
+};
+typedef struct n Node;
+```,
+canvas(length: 1cm, {
+  import draw: *
+  for (k, v) in ("9", "10", "11").enumerate() {
+    let x = k * 2.2
+    rect((x, 0), (x + 0.8, 0.6), fill: rgb("#dff2e3")); content((x + 0.4, 0.3), text(9pt, v))
+    rect((x + 0.8, 0), (x + 1.6, 0.6), fill: rgb("#dff2e3"))
+    if k < 2 { line((x + 1.2, 0.3), (x + 2.2, 0.3), mark: (end: "stealth")) } else { content((x + 1.2, 0.3), text(6.5pt)[`NULL`]) }
+  }
+  content((-0.4, 1.0), text(8pt)[`head`]); line((-0.3, 0.85), (0.2, 0.62), mark: (end: "stealth"))
+  content((0.4, -0.3), text(6.5pt, fill: gray)[`val`]); content((1.2, -0.3), text(6.5pt, fill: gray)[`next`])
+}))
+
+Nella `struct` va scritto `struct n *next` e non `Node *next`, perché il nome `Node` nasce solo con il `typedef` dopo. L'esempio del prof costruisce questa lista con tre nodi locali e la stampa:
+
+#grid(columns: (1.2fr, 1fr), gutter: 1em, align: horizon,
+```c
+Node *head = NULL;           // lista vuota
+
+Node elem;
+elem.val = 10;
+elem.next = NULL;
+head = &elem;                // un elemento
+
+Node elem1;                  // in coda
+elem1.val = 11;
+elem1.next = NULL;
+elem.next = &elem1;
+
+Node elem2;                  // in testa
+elem2.val = 9;
+elem2.next = head;
+head = &elem2;
+```,
+[
+```c
+Node *l = head;
+while (l != NULL) {
+    printf("%d ", l->val);
+    l = l->next;
+}
+// 9 10 11
+```
+- *in testa*: il nuovo nodo punta alla vecchia testa, poi diventa la testa;
+- *in coda*: l'ultimo nodo, che puntava a `NULL`, punta al nuovo;
+- *scorrere*: un puntatore `l` parte dalla testa e segue `next` finché non trova `NULL`.
+])
+
+Con nodi locali la lista muore con la funzione. Una lista vera alloca ogni nodo con `malloc`. Nella soluzione del prof a un esercizio, ogni nodo è uno studente:
+
+```c
+typedef struct Studente {
+    int matricola;
+    int eta;
+    struct Studente *next;
+} Studente;
+
+Studente* aggiungiStudente(Studente *head, int matricola, int eta) {
+    Studente *nuovo = (Studente *) malloc(sizeof(Studente));
+    if (nuovo == NULL) return head;
+    nuovo->matricola = matricola;
+    nuovo->eta = eta;
+    nuovo->next = NULL;
+    if (head == NULL) return nuovo;      // lista vuota: diventa la testa
+    Studente *temp = head;
+    while (temp->next != NULL)           // cerco l'ultimo
+        temp = temp->next;
+    temp->next = nuovo;
+    return head;
+}
+
+void liberaLista(Studente *head) {
+    Studente *temp;
+    while (head != NULL) {
+        temp = head;
+        head = head->next;    // prima avanzo...
+        free(temp);           // ...poi libero
+    }
+}
+```
+
+Due punti non scontati:
++ `aggiungiStudente` *restituisce la testa*, e chi la chiama assegna il risultato alla sua testa (`head = aggiungiStudente(head, …)`). Serve perché se la lista era vuota la testa cambia, e la funzione ha solo una copia di `head`.
++ In `liberaLista` l'ordine conta: dopo `free(temp)` leggere `temp->next` sarebbe un uso dopo `free`.
+
+L'alternativa al valore restituito è il passaggio per indirizzo della testa, come in `swap`. Il `main` del prof lo fa con la funzione di test:
+
+#grid(columns: (1.5fr, 1fr), gutter: 1em, align: horizon,
+```c
+void testLista(Studente **lista) {
+    *lista = aggiungiStudente(*lista,
+                              1, 23);
+    *lista = aggiungiStudente(*lista,
+                              2, 21);
+    stampaLista(*lista);
+}
+
+int main(void) {
+    Studente *lista = NULL;
+    testLista(&lista);
+    liberaLista(lista);
+}
+```,
+[`lista` è un `Studente *`; il suo indirizzo `&lista` è uno `Studente **`. Dentro `testLista`, `*lista` *è* la variabile `lista` del `main`, quindi assegnarle una nuova testa cambia proprio quella.])
+
+#esercizio[lista di studenti][Completare il programma: `stampaLista`; `ordinaPerEta`, che ordina la lista per età crescente con un bubble sort che scambia i *valori* dei nodi (non i puntatori); `estraiPerEta`, che restituisce una *nuova* lista con gli studenti dell'età letta da tastiera. Alla fine liberare entrambe le liste.]
+
+#esercizio[ordinare con merge sort][Allocare dinamicamente un array di puntatori a `struct Studente` (matricola ed età), leggere numero e dati degli studenti, ordinare l'array per matricola con Merge Sort e stamparlo, poi liberare tutta la memoria. Si ordinano i *puntatori*: `array[k] = L[i]` sposta un indirizzo, non la `struct`.]
+
+== Alberi binari di ricerca <alberi>
+
+Lo stesso schema con *due* puntatori per nodo dà un albero binario. In un *albero binario di ricerca* ogni nodo ha a sinistra solo valori minori e a destra solo valori maggiori o uguali. Nell'esercizio del prof i nodi sono studenti ordinati per età: i più giovani a sinistra, i più anziani a destra. Inserimento, stampa e liberazione sono *ricorsivi*.
+
+#grid(columns: (1.6fr, 1fr), gutter: 1em, align: horizon,
+```c
+typedef struct Studente {
+    int matricola;
+    int eta;
+    struct Studente *left;
+    struct Studente *right;
+} Studente;
+
+Studente* inserisciStudente(Studente *radice,
+                            int matricola,
+                            int eta) {
+    if (radice == NULL)    // posto vuoto: qui
+        return creaNodo(matricola, eta);
+    if (eta < radice->eta)
+        radice->left = inserisciStudente(
+            radice->left, matricola, eta);
+    else
+        radice->right = inserisciStudente(
+            radice->right, matricola, eta);
+    return radice;
+}
+```,
+canvas(length: 1cm, {
+  import draw: *
+  let nodo(p, t) = { circle(p, radius: 0.35, fill: rgb("#eef4ff")); content(p, text(8pt, t)) }
+  line((0, 0), (-1.2, -1.2)); line((0, 0), (1.2, -1.2))
+  line((-1.2, -1.2), (-0.6, -2.4)); line((1.2, -1.2), (0.6, -2.4))
+  nodo((0, 0), [22]); nodo((-1.2, -1.2), [20]); nodo((1.2, -1.2), [25])
+  nodo((-0.6, -2.4), [21]); nodo((0.6, -2.4), [23])
+  content((0, -3.2), text(7.5pt, fill: gray)[inseriti: 22, 20, 25, 21, 23])
+}))
+
+`creaNodo` alloca il nodo con `malloc` e mette `left` e `right` a `NULL`. Come per la lista, `inserisciStudente` restituisce la radice, che cambia solo quando l'albero è vuoto: si chiama `radice = inserisciStudente(radice, m, e);`. Nel disegno, 21 va a sinistra di 22 (è minore) e poi a destra di 20 (è maggiore).
+
+#grid(columns: (1fr, 1fr), gutter: 1em,
+```c
+void stampaInOrder(Studente *radice) {
+    if (radice == NULL) return;
+    stampaInOrder(radice->left);
+    printf("%d %d\n", radice->matricola,
+                     radice->eta);
+    stampaInOrder(radice->right);
+}
+```,
+```c
+void liberaAlbero(Studente *radice) {
+    if (radice == NULL) return;
+    liberaAlbero(radice->left);
+    liberaAlbero(radice->right);
+    free(radice);
+}
+```)
+
+La visita *in ordine* (sinistra, nodo, destra) stampa le età in ordine crescente: 20, 21, 22, 23, 25. In `liberaAlbero` il nodo si libera *per ultimo*: liberato prima, i suoi `left` e `right` non si potrebbero più leggere.
+
+#esercizio[albero di studenti][Leggere coppie matricola/età e inserirle nell'albero, fermandosi quando la matricola è 0. Stampare gli studenti in ordine di età, poi quelli di un'età letta da tastiera (`stampaEta`, ricorsiva), e liberare la memoria.]
+
+#set heading(numbering: none)
+= Riepilogo
+
+#table(columns: (auto, 1fr, 1fr),
+  [Errore], [Quando], [Esempio],
+  [di compilazione], [sintassi, tipi incompatibili, nome non dichiarato], [`expected ';'`, `'countA' undeclared`, `implicit declaration of function`, `makes pointer from integer without a cast`],
+  [del linker], [manca la *definizione* di qualcosa di dichiarato], [`undefined reference to 'max'` (anche se è `static` in un altro file)],
+  [di esecuzione], [compila ma si comporta male], [`Segmentation fault`: `NULL`, memoria non allocata, scrivere su `char *s = "…"`],
+)
+
+#table(columns: (auto, 1fr),
+  [Scrittura], [Significato],
+  [`int *p;`], [puntatore a `int`, valore non definito],
+  [`p = &x;` / `*p = 5;`], [`p` punta a `x` / scrive 5 in `x`],
+  [`a + i`, `*(a + i)`], [`&a[i]`, `a[i]` (avanza di `i` *elementi*)],
+  [`int **m`], [puntatore a puntatore: array di righe, o indirizzo di un puntatore da modificare],
+  [`s->campo`], [`(*s).campo`],
+  [`void *`], [puntatore generico: casting prima di dereferenziare],
+  [`int (*f)(int, int)`], [puntatore a funzione],
+)
+
+#table(columns: (auto, auto, 1fr),
+  [Variabile], [Dove], [Visibile / durata],
+  [locale], [stack], [nel blocco / fino alla `}`],
+  [locale `static`], [dati statici], [nel blocco / tutto il programma, mantiene il valore],
+  [globale], [dati statici], [nel file, e negli altri con `extern` / tutto il programma],
+  [globale `static`], [dati statici], [solo nel suo file / tutto il programma],
+  [`malloc`, `calloc`], [heap], [tramite puntatore / fino a `free`],
+)
+
+*Trappole*
+- `5 / 2` vale 2; `(float) a / b` divide fra reali, `(float) (a / b)` no.
+- `2 < a < 5` è sempre vero; `switch` senza `break` prosegue nel `case` dopo.
+- `scanf` vuole gli indirizzi (`&x`, ma non per un array di `char`) e `%lf` per i `double`.
+- Una variabile in un blocco interno copre quella esterna, e la condizione del `do-while` vede quella esterna.
+- `a + i` e non `a + i * sizeof(int)`; `sizeof` di un array ≠ `sizeof` di un puntatore.
+- `char s[] = "ciao"` si modifica, `char *s = "ciao"` no; `s2 = s1` copia l'indirizzo; le stringhe si confrontano con `strcmp`, non con `==`.
+- `strtok` modifica la stringa; `strlen` non conta `'\0'`, ma lo spazio da allocare sì (`n + 1`).
+- Controllare `!= NULL` dopo `malloc`; liberare le righe prima dell'array di righe, il nodo dopo aver letto `next`.
