@@ -1618,44 +1618,94 @@ La memoria dinamica resta occupata finché non la si libera con `free(aPtr);`, d
 
 == Array di puntatori e matrici dinamiche <matrici>
 
-I puntatori sono variabili, quindi se ne possono fare array:
-- `int *ps[10];` è un array di 10 puntatori, *non inizializzati*: bisogna assegnare un valore a ognuno;
-- `int **ps = (int**) malloc(n * sizeof(int*));` è un array *dinamico* di `n` puntatori a `int`, non inizializzati; con `calloc(n, sizeof(int*))` partono tutti a `NULL`.
+Una matrice `int b[N][M]` ha due limiti: `N` e `M` si decidono quando si scrive il programma, e una funzione che la riceve deve conoscere `M` (`int b[][M]`, @array-puntatori). Se le dimensioni si leggono da input servono una matrice costruita sull'heap e, per farla, un *array di puntatori*.
 
-`int **` si legge "puntatore a puntatore a `int`". Se ogni `ps[i]` punta a sua volta a un array allocato con `malloc`, `ps` si usa come una matrice: `ps[i][j]` è l'elemento `j` della riga `i`. È la *matrice dinamica allocata per righe*:
+I puntatori sono variabili, quindi se ne possono fare array:
+- `int *ps[10];` alloca 10 puntatori *non inizializzati*: bisogna assegnare un valore a ognuno;
+- `int **ps = (int**) malloc(n * sizeof(int*));` alloca sull'heap `n` puntatori a `int`, non inizializzati; con `calloc(n, sizeof(int*))` partono tutti a `NULL`.
+
+Il tipo `int **` si legge "puntatore a puntatore a `int`". Viene dalla regola di sempre: `malloc` restituisce l'indirizzo del primo elemento, quindi per elementi `int` serve un `int *`, per elementi `int *` serve un `int **`.
+
+Ora si fa puntare ogni `ps[i]` a un array di `int` allocato a parte: ogni array è una riga. È la *matrice dinamica allocata per righe*:
 
 ```c
-int **a = (int**) malloc(3 * sizeof(int*));
+int **a = (int**) malloc(3 * sizeof(int*));   // 3 puntatori, uno per riga
 for (int i = 0; i < 3; i++)
-    a[i] = (int*) malloc(3 * sizeof(int));
+    a[i] = (int*) malloc(3 * sizeof(int));    // la riga i: 3 int
 ```
 
-#grid(columns: (1fr, auto), gutter: 1em, align: horizon,
-[A confronto con `int a[3][3];`: a destra, in alto, la versione dinamica. In giallo l'array dei 3 puntatori; ogni freccia rossa va a una riga allocata a parte, in un punto qualunque dell'heap. In basso la statica, 9 `int` uno dopo l'altro.],
-canvas(length: 1cm, {
+Nel disegno, a sinistra questa matrice, a destra `int b[3][3]` per confronto. In giallo i puntatori, in blu e verde gli `int`; in rosso lo stesso elemento `[1][2]` nelle due matrici.
+
+#align(center, canvas(length: 1cm, {
   import draw: *
-  content((0.6, 1.1), text(8pt, fill: blu)[dinamica: righe sparse sull'heap])
+  let giallo = rgb("#fff3c4")
+  let rosso = rgb("#f7c6c6")
+  // a, sullo stack
+  rect((0, 0), (0.9, 0.6), fill: rgb("#dff2e3"), stroke: 0.5pt)
+  content((0.45, -0.3), text(8pt)[`a`, sullo stack])
+  // array dei puntatori e righe, sull'heap
+  rect((1.5, -2.6), (6.6, 1.9), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+  content((4.05, 2.15), text(7.5pt, fill: gray)[heap])
+  line((0.9, 0.3), (1.8, 0.3), mark: (end: "stealth"), stroke: 0.6pt + red)
+  let dx = (0.8, 0, 0.5)
   for i in range(3) {
-    rect((0, -i * 0.6), (0.7, -i * 0.6 + 0.6), fill: rgb("#fff3c4"), stroke: 0.5pt)
-    content((0.35, -i * 0.6 + 0.3), text(7pt, raw("a[" + str(i) + "]")))
-    let x = 1.6 + i * 0.5
-    let y = 0.4 - i * 0.9
-    for k in range(3) { rect((x + k * 0.5, y), (x + k * 0.5 + 0.5, y + 0.45), fill: rgb("#dce8fb"), stroke: 0.5pt) }
-    line((0.7, -i * 0.6 + 0.3), (x, y + 0.22), mark: (end: "stealth"), stroke: 0.5pt + red)
+    let y = 0.6 - (i + 1) * 0.6
+    rect((1.8, y), (2.7, y + 0.6), fill: giallo, stroke: 0.5pt)
+    content((2.25, y + 0.3), text(7pt, raw("a[" + str(i) + "]")))
+    let x = 3.4 + dx.at(i)
+    let yr = 1.1 - i * 1.3
+    for k in range(3) {
+      let c = if i == 1 and k == 2 { rosso } else { rgb("#dce8fb") }
+      rect((x + k * 0.6, yr), (x + k * 0.6 + 0.6, yr + 0.5), fill: c, stroke: 0.5pt)
+    }
+    content((x + 0.9, yr - 0.22), text(6.5pt, fill: gray)[riga #i])
+    line((2.7, y + 0.3), (x, yr + 0.25), mark: (end: "stealth"), stroke: 0.6pt + red)
   }
-  content((0.6, -2.6), text(8pt, fill: verde)[statica: 9 `int` contigui])
-  for k in range(9) { rect((k * 0.4 - 0.4, -3.3), (k * 0.4, -2.9), fill: rgb("#dff2e3"), stroke: 0.5pt) }
+  // b[3][3]: un blocco unico
+  let x0 = 7.6
+  content((x0 + 2.7, 0.9), text(7.5pt)[`int b[3][3]`])
+  for k in range(9) {
+    let c = if k == 5 { rosso } else { rgb("#dff2e3") }
+    rect((x0 + k * 0.6, 0), (x0 + k * 0.6 + 0.6, 0.5), fill: c, stroke: 0.5pt)
+  }
+  for r in range(3) {
+    let x = x0 + r * 1.8
+    line((x + 0.05, -0.15), (x + 1.75, -0.15), stroke: 0.5pt + gray)
+    content((x + 0.9, -0.4), text(6.5pt, fill: gray)[riga #r])
+  }
 }))
 
-Rispetto a `int a[N][M]`:
-- l'organizzazione in memoria è diversa: le righe non sono contigue;
-- ogni riga può avere *una lunghezza diversa*, senza sprechi;
-- si passa a una funzione come `int **` *senza conoscere `M`*, mentre `int a[][M]` vuole la seconda dimensione.
+`a[1][2]` si legge in due passi, come `(a[1])[2]`:
++ `a[1]` è il secondo puntatore giallo: l'indirizzo della riga 1;
++ `[2]` su quell'indirizzo dà il terzo `int` della riga.
 
-Le righe si liberano una per una, e *prima* dell'array dei puntatori: liberando prima `a`, gli indirizzi delle righe andrebbero persi (memory leak). La soluzione del prof a un esercizio: leggere `M`, `N` e una matrice `M × M`, e stampare la somma della sottomatrice `N × N` in alto a sinistra (con le righe `(1,2,3,4)`, `(5,6,7,8)`, … e `N = 2` dà `1 + 2 + 5 + 6 = 14`).
+Con `b[1][2]` invece c'è un blocco unico: si salta una riga intera da 3 `int`, poi altri 2 `int`. Per questo il compilatore deve conoscere la lunghezza della riga, mentre con `a` gli indirizzi delle righe sono scritti nei puntatori gialli. Le differenze:
 
-#grid(columns: (1fr, 1fr), gutter: 1em,
+#table(columns: (auto, 1fr, 1fr),
+  [], [`int b[N][M]`], [`int **a` allocata per righe],
+  [dimensioni], [fisse, scritte nel programma], [decise mentre il programma gira],
+  [in memoria], [un blocco unico, righe una dopo l'altra], [righe sparse sull'heap],
+  [righe], [tutte lunghe `M`], [ognuna può avere una lunghezza diversa, senza sprechi],
+  [parametro], [`int b[][M]`: serve `M`], [`int **a`: `M` non serve],
+  [liberare], [non serve], [`free` di ogni riga, poi di `a`],
+)
+
+L'ordine del `free` conta: prima le righe, poi l'array dei puntatori. Al contrario, dopo `free(a)` gli indirizzi delle righe non si possono più leggere, e le righe restano occupate per sempre (memory leak).
+
 ```c
+for (int i = 0; i < 3; i++)
+    free(a[i]);
+free(a);
+```
+
+Un esempio del prof mette tutto insieme. Leggere `M`, `N` (con `M ≥ N ≥ 0`) e una matrice `M × M` allocata per righe; stampare la somma della sottomatrice `N × N` in alto a sinistra, con una funzione `int sum_submatrix(int **matrix, int n)`. Con `M = 4`, `N = 2` e righe `(1,2,3,4)`, `(5,6,7,8)`, `(9,10,11,12)`, `(13,14,15,16)` stampa `1 + 2 + 5 + 6 = 14`.
+
+#[#show raw: set text(size: 0.9em)
+#grid(columns: (1fr, 1.12fr), gutter: 0.8em,
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
 int sum_submatrix(int **matrix, int n) {
     int i, j, sum = 0;
     for (i = 0; i < n; i++)
@@ -1663,26 +1713,48 @@ int sum_submatrix(int **matrix, int n) {
             sum += matrix[i][j];
     return sum;
 }
+
+int main(void) {
+    int m, n, i, j;
+    int **A;
+    scanf("%d%d", &m, &n);
+    if (m < 0 || n < 0 || n > m)
+        return 1;
+    if (m == 0) {
+        printf("0\n");
+        return 0;
+    }
 ```,
 ```c
-A = malloc(m * sizeof(int *));
-if (A == NULL) return 1;
-for (i = 0; i < m; i++) {
-    A[i] = malloc(m * sizeof(int));
-    if (A[i] == NULL) {
-        // libera le righe già allocate
-        while (i > 0) free(A[--i]);
-        free(A);
-        return 1;
+    A = malloc(m * sizeof(int *));
+    if (A == NULL) return 1;
+    for (i = 0; i < m; i++) {
+        A[i] = malloc(m * sizeof(int));
+        if (A[i] == NULL) {
+            while (i > 0) free(A[--i]);
+            free(A);
+            return 1;
+        }
     }
+    for (i = 0; i < m; i++)
+        for (j = 0; j < m; j++)
+            if (scanf("%d", &A[i][j]) != 1) {
+                for (i = 0; i < m; i++)
+                    free(A[i]);
+                free(A);
+                return 1;
+            }
+    printf("%d\n", sum_submatrix(A, n));
+    for (i = 0; i < m; i++) free(A[i]);
+    free(A);
+    return 0;
 }
-// ... lettura con scanf("%d", &A[i][j])
-printf("%d\n", sum_submatrix(A, n));
-for (i = 0; i < m; i++) free(A[i]);
-free(A);
-```)
+```)]
 
-Qui `malloc` è senza casting: in C un `void*` si converte da solo in qualunque puntatore, quindi `(int**)` si può omettere.
+Le righe nuove:
+- `malloc` è senza `(int**)`: in C un `void*` si converte da solo in qualunque puntatore, quindi il casting si può omettere;
+- se fallisce la `malloc` della riga `i`, le righe da 0 a `i-1` sono già allocate e vanno liberate prima di uscire. `free(A[--i])` decrementa `i` *prima* di usarlo, quindi libera `A[i-1]`, …, `A[0]`; poi si libera `A`;
+- `scanf` restituisce quanti valori ha letto: se non è 1 l'input è sbagliato, e prima di uscire si libera tutto.
 
 #esercizio[diagonale][Leggere `M` e una matrice quadrata `M × M`, allocata dinamicamente per righe. Con una funzione, cambiare il segno degli elementi sulla diagonale principale e stampare la matrice, una riga per riga di output. `(1,2,3), (4,5,6), (7,8,9)` diventa `(-1,2,3), (4,-5,6), (7,8,-9)`.]
 
