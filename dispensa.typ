@@ -352,7 +352,7 @@ prova1.c  prova2.c  provaA.c
   content((7, -1.1), text(8pt, fill: gray)[l'espansione avviene *prima* che `ls` parta: `ls` non vede mai l'asterisco])
 }))
 
-== Flussi: redirezione e pipe
+== Flussi: redirezione e pipe <flussi>
 
 Ogni programma ha tre *flussi standard*:
 
@@ -1932,15 +1932,18 @@ qsort(a, 5, sizeof(int), compInt);
 
 == Trovare gli errori <debugging>
 
-Il primo modo di cercare un errore è stampare i valori delle variabili. Ma `printf` scrive su `stdout`, che è *bufferizzato*: il testo può restare in un buffer invece di comparire subito, e se il programma termina per un errore quella stampa va persa. `stderr` invece non aspetta, e `fprintf` permette di scegliere il flusso:
+Un programma con i puntatori spesso compila senza errori, ma mentre gira dà risultati sbagliati o termina con `Segmentation fault` (@puntatori). Per capire *dove* sbaglia ci sono strumenti via via più potenti: le stampe, `assert`, e due programmi fatti apposta, gdb e valgrind.
+
+Il modo più semplice è *stampare i valori delle variabili*. Ma `printf` scrive su `stdout`, che è *bufferizzato*: il testo si può accumulare in un buffer (una zona di memoria) invece di comparire subito a video, e se il programma termina per un errore quello che c'è nel buffer si perde. Su `stderr` (@flussi) invece il testo esce subito. Per scriverci si usa `fprintf`, che è come `printf` ma riceve come primo argomento il flusso:
 
 ```c
 fprintf(stderr, "Messaggio\n");
 ```
 
-Durante lo sviluppo si può controllare che lo stato sia quello atteso con la macro `assert` di `assert.h`. Riceve un'espressione intera: se è vera l'esecuzione continua, se è falsa stampa un errore su `stderr` e *termina subito*.
+#nota[*Trappola*: se dopo `printf("prima");` il programma va in `Segmentation fault`, su terminale `prima` non compare, e sembra che il programma si sia fermato *prima* della `printf`. Con `fprintf(stderr, "prima");` compare. Su terminale `stdout` svuota il buffer a ogni `\n`: si perdono le stampe senza `\n`.]
 
-#grid(columns: (1fr, 1.2fr), gutter: 1em, align: horizon,
+Una stampa però mostra solo i valori che si decide di guardare. Con la macro `assert` (da `assert.h`) si scrive invece una condizione che in quel punto *deve* essere vera. `assert` riceve un'espressione intera: se è vera l'esecuzione continua, se è falsa stampa un errore su `stderr` e *termina subito* il programma. Qui l'utente deve inserire un numero positivo, e sotto c'è cosa succede se inserisce `-3`:
+
 ```c
 #include <stdio.h>
 #include <assert.h>
@@ -1951,64 +1954,119 @@ int main(void) {
     assert(x > 0);
     printf("Hai inserito %d\n", x);
 }
-```,
-[
+```
+
 ```sh
 $ ./main
 -3
 main: main.c:7: main: Assertion `x > 0' failed.
+Aborted (core dumped)
 ```
-Per disattivare tutti gli `assert` si definisce la macro `NDEBUG` *prima* dell'`include`: `#define NDEBUG`. Allora con `-3` il programma stampa `Hai inserito -3`.
-])
 
-Stampe e `assert` non bastano sui programmi grandi. Ci sono due strumenti, e per entrambi si compila con `-g`:
+Il messaggio dice il programma, il file, la riga, la funzione e la condizione falsa; `Aborted` è la terminazione immediata. Gli `assert` servono durante lo sviluppo. Per spegnerli tutti senza cancellarli si definisce la macro `NDEBUG` *prima* di includere `assert.h`, perché è al momento dell'`include` che `assert` decide se fare il controllo:
+
+```c
+#define NDEBUG
+#include <stdio.h>
+#include <assert.h>
+```
+
+Ora con `-3` il programma stampa `Hai inserito -3`.
+
+Aggiungere e togliere stampe è lento, e su un programma grande non basta. Ci sono due programmi fatti apposta:
+- *gdb* esegue il programma passo per passo e fa vedere il valore delle variabili;
+- *valgrind* sorveglia gli accessi alla memoria e segnala quelli sbagliati.
+
+Nessuno dei due entra nel codice di una libreria già compilata: le funzioni vanno provate *prima* di metterle in una libreria.
+
+Per entrambi si compila con l'opzione `-g`, che mette nell'eseguibile i nomi delle variabili e i numeri di riga del sorgente: così gdb e valgrind parlano di `x` e di `main.c:6` invece che di indirizzi (`-Wall` e `-pedantic` sono in @compilazione). Poi si avvia gdb sull'eseguibile:
 
 ```sh
 $ gcc -g -Wall -pedantic main.c -o main
-$ gdb main                              # gdb [opzioni] eseguibile
-$ valgrind --leak-check=full ./main     # valgrind ./eseguibile [argomenti]
+$ gdb main                  # in generale: gdb [opzioni] eseguibile
 ```
 
-*gdb* esegue il programma in modo controllato: lo si ferma in certi punti per guardare le variabili.
-- un *breakpoint* è un punto del codice dove fermarsi;
-- un *watchpoint* è una variabile da sorvegliare: il programma si ferma quando cambia. Funziona solo dentro lo scope della variabile.
+gdb apre un suo prompt, `(gdb)`, dove si scrivono i comandi: `run` avvia il programma, `quit` chiude gdb. Lanciato così, però, il programma corre fino in fondo. Per guardarlo da dentro bisogna dire a gdb *dove fermarsi*:
+- un *breakpoint* è un punto del codice: quando l'esecuzione ci arriva, si ferma;
+- un *watchpoint* è una variabile da sorvegliare: l'esecuzione si ferma quando il suo valore cambia. Funziona solo finché la variabile è nel suo scope (per una variabile locale, finché si è dentro la sua funzione).
 
 #table(columns: (auto, 1fr),
-  [Comando gdb], [Cosa fa],
-  [`run` / `quit`], [avvia il programma / chiude gdb],
-  [`b 6`, `b main.c:6`, `b push`], [breakpoint alla riga 6, alla riga 6 di `main.c`, alla prima istruzione della funzione `push`],
+  [Comando], [Dove si ferma],
+  [`b 6`], [breakpoint alla riga 6],
+  [`b main.c:6`], [breakpoint alla riga 6 del file `main.c`],
+  [`b push`], [breakpoint sulla prima istruzione della funzione `push`],
   [`watch a`], [watchpoint sulla variabile `a`],
-  [`delete n`, `enable n`, `disable n`], [toglie, attiva, disattiva il breakpoint o watchpoint numero `n`],
-  [`p x`, `p &x`], [stampa il valore di `x`, il suo indirizzo],
-  [`p a[3]@5`], [stampa 5 valori dell'array `a` a partire da `a[3]`],
-  [`bt`], [_backtrace_: la pila dei record di attivazione (chi ha chiamato chi)],
-  [`x`], [stampa il contenuto di un indirizzo di memoria],
-  [`continue`], [riparte fino al prossimo breakpoint],
-  [`next`], [un'istruzione avanti, *senza entrare* nelle funzioni chiamate],
-  [`step`], [un'istruzione avanti, *entrando* nelle chiamate],
-  [`finish`], [fino all'uscita dalla funzione corrente],
+  [`delete n`, `enable n`, `disable n`], [toglie, riattiva, disattiva il breakpoint o watchpoint numero `n` (gdb li numera man mano che li crei)],
 )
+
+Fermi su un breakpoint, si guarda lo *stato* del programma:
+
+#table(columns: (auto, 1fr),
+  [Comando], [Cosa stampa],
+  [`p x`, `p &x`], [il valore di `x`, il suo indirizzo (`p` sta per _print_)],
+  [`p a[3]@5`], [5 elementi dell'array `a` a partire da `a[3]`],
+  [`bt`], [_backtrace_: la pila dei record di attivazione (@allocazione), cioè quale funzione ha chiamato quale fino a quella in cui si è fermi],
+  [`x` _indirizzo_], [il contenuto della memoria a quell'indirizzo],
+)
+
+Poi si fa *ripartire* l'esecuzione:
+
+#table(columns: (auto, 1fr),
+  [Comando], [Fin dove va avanti],
+  [`continue`], [fino al prossimo breakpoint],
+  [`next`], [un'istruzione, *senza entrare* nelle funzioni chiamate: una chiamata viene eseguita tutta in un colpo],
+  [`step`], [un'istruzione, *entrando* nella funzione se l'istruzione è una chiamata],
+  [`finish`], [fino all'uscita dalla funzione in cui si è],
+)
+
+#block(breakable: false)[
+Il disegno mette insieme i comandi. La barra è l'esecuzione del programma nel tempo, da sinistra a destra: in azzurro il codice di `main`, in verde una funzione `f` chiamata da `main`, in rosso i due breakpoint (BP). Le frecce dritte indicano dove si ferma il programma dopo ogni comando; quelle curve, da dove a dove salta un comando.
 
 #align(center, canvas(length: 1cm, {
   import draw: *
-  rect((0, 0), (2.4, 0.6), fill: rgb("#dce8fb")); content((0.5, 0.3), text(7pt)[`main`])
-  rect((2.4, 0), (2.7, 0.6), fill: rgb("#f5b7b1")); content((2.55, 0.3), text(6pt)[BP])
-  rect((2.7, 0), (6, 0.6), fill: rgb("#dce8fb"))
-  rect((6, 0), (9, 0.6), fill: rgb("#dff2e3")); content((7.5, 0.3), text(7pt)[funzione `f`])
-  rect((9, 0), (10, 0.6), fill: rgb("#dce8fb")); content((9.5, 0.3), text(7pt)[`main`])
-  rect((10, 0), (10.3, 0.6), fill: rgb("#f5b7b1")); content((10.15, 0.3), text(6pt)[BP])
-  rect((10.3, 0), (10.8, 0.6), fill: rgb("#dce8fb"))
-  content((2.55, 1.2), text(7pt)[`run`]); line((2.55, 1.0), (2.55, 0.65), mark: (end: "stealth"))
-  content((5.6, 1.2), text(7pt)[`next`]); line((5.6, 1.0), (5.6, 0.65), mark: (end: "stealth"))
-  bezier((5.9, 0.65), (9.1, 0.65), (7.5, 1.8), mark: (end: "stealth"), stroke: 0.6pt + blu); content((7.5, 1.6), text(7pt, fill: blu)[`next` salta `f`])
-  content((6.1, -0.5), text(7pt)[`step`]); line((6.1, -0.3), (6.1, -0.05), mark: (end: "stealth"))
-  bezier((7.5, -0.05), (9.1, -0.05), (8.3, -0.7), mark: (end: "stealth"), stroke: 0.6pt + verde); content((8.3, -0.85), text(7pt, fill: verde)[`finish`])
-  bezier((2.8, -0.05), (10.1, -0.05), (6.5, -1.9), mark: (end: "stealth"), stroke: 0.6pt + red); content((4.2, -1.3), text(7pt, fill: red)[`continue`: al prossimo BP])
+  let az = rgb("#dce8fb")
+  let vd = rgb("#dff2e3")
+  let rs = rgb("#f5b7b1")
+  // barra: (inizio, fine, colore, etichetta)
+  for (a, b, col, et) in (
+    (0, 2.6, az, [`main`]), (2.6, 3.0, rs, [BP]), (3.0, 8.4, az, []),
+    (8.4, 11.6, vd, [`f`]), (11.6, 13.4, az, [`main`]), (13.4, 13.8, rs, [BP]), (13.8, 14.4, az, []),
+  ) {
+    rect((a, 0), (b, 0.7), fill: col, stroke: 0.5pt)
+    content(((a + b) / 2, 0.35), text(8pt, et))
+  }
+  // frecce dall'alto: dove si ferma il programma
+  for (x, et) in ((0.15, [`gdb main`]), (2.8, [`run`]), (3.8, [`next`]), (4.9, [`next`]), (8.1, [`next`])) {
+    line((x, 1.4), (x, 0.75), mark: (end: "stealth"))
+    content((x, 1.65), text(8.5pt, et))
+  }
+  // next salta f
+  bezier((8.2, 0.75), (11.8, 0.75), (10, 2.6), mark: (end: "stealth"), stroke: 0.8pt + blu)
+  content((10, 2.15), text(8.5pt, fill: blu)[`next`: esegue `f` in un colpo])
+  // step entra in f
+  line((8.6, -0.7), (8.6, -0.05), mark: (end: "stealth"))
+  content((8.6, -0.95), text(8.5pt)[`step`])
+  // finish esce da f
+  bezier((10, -0.05), (11.8, -0.05), (10.9, -0.8), mark: (end: "stealth"), stroke: 0.8pt + verde)
+  content((10.9, -0.7), text(8.5pt, fill: verde)[`finish`])
+  // continue fino al prossimo BP
+  bezier((5.1, -0.05), (13.6, -0.05), (9.3, -3.2), mark: (end: "stealth"), stroke: 0.8pt + red)
+  content((9.3, -1.95), text(8.5pt, fill: red)[`continue`: fino al prossimo BP])
 }))
+]
 
-Lo schema mostra un'esecuzione: la barra è il programma nel tempo, BP sono i breakpoint. `run` parte e si ferma al primo BP. `next` avanza di un'istruzione, e se l'istruzione chiama `f` la esegue tutta in un colpo. `step` invece entra in `f`, e da dentro `finish` porta all'uscita. `continue` corre fino al prossimo BP.
+*valgrind* esegue il programma tenendo traccia di *tutti gli accessi alla memoria*, e stampa un messaggio quando la memoria è usata male. Trova per esempio:
+- variabili usate prima di essere inizializzate;
+- *stack overflow*: lo stack si riempie, per esempio con una ricorsione che non si ferma mai;
+- memory leak (@allocazione).
 
-*valgrind* esegue il programma tenendo traccia di *tutti gli accessi alla memoria*, e stampa un messaggio quando la memoria è usata male: variabili non inizializzate, stack overflow, memory leak (con `--leak-check=full`). Nessuno dei due strumenti entra nel codice di una libreria già compilata: le funzioni vanno testate prima di metterle in una libreria.
+Anche qui si compila con `-g`, poi si fa partire il programma *dentro* valgrind:
+
+```sh
+$ gcc -g -Wall -pedantic main.c -o main
+$ valgrind ./main [argomenti]         # argomenti di main, se ne ha
+$ valgrind --leak-check=full ./main   # in più, i dettagli dei memory leak
+```
 
 = Strutture dati
 
