@@ -36,7 +36,7 @@ Qui i grezzi sono **file `.c` in `lezioni/`**, con gli appunti nei commenti (`fi
 1. "L'ambiente di lavoro UNIX" (lez. 1-2): terminale e filesystem · lavorare con i file · flussi, redirezione e pipe.
 2. "Il linguaggio C" (lez. 1, 3-7): dal sorgente all'eseguibile · com'è fatto un programma C · tipi e costanti · operatori e controllo del flusso · array e tipi custom · funzioni e programmi su più file.
 3. "Puntatori e memoria" (lez. 8-12): puntatori · array e puntatori · allocazione statica e dinamica · array di puntatori e matrici dinamiche · stringhe · puntatori a funzioni · trovare gli errori.
-4. "Strutture dati" (lez. 10-12): liste concatenate · alberi binari di ricerca.
+4. "Strutture dati" (lez. 10-12): puntatori a struct (con il merge sort della L11) · liste concatenate · alberi binari di ricerca.
 5. Riepilogo (appendice): errori, puntatori, classi di memorizzazione, trappole.
 
 Tutti gli esercizi del prof sono nella dispensa (anche i micro-esercizi di L01-L02), ognuno subito dopo l'argomento che serve. Quelli la cui soluzione del prof sta nel testo come esempio (quoziente, pari/dispari, prodotto scalare, anagrafe, `sum_submatrix`) non hanno box; gli altri sono `#esercizio` con la sola consegna.

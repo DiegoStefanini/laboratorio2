@@ -2071,19 +2071,20 @@ $ valgrind --leak-check=full ./main   # in più, i dettagli dei memory leak
 = Strutture dati
 
 #obiettivi(
-  [allocare una `struct` sull'heap e usarne i campi con `->`;],
+  [allocare una `struct` sull'heap e usarne i membri con `->`;],
   [costruire, scorrere e liberare una lista concatenata, inserendo in testa e in coda;],
   [inserire in un albero binario di ricerca, visitarlo in ordine e liberarlo, con funzioni ricorsive.],
 )
 
-== Liste concatenate <liste>
+In JavaScript un array cresce da solo con `push`, e la memoria la libera il garbage collector. In C un array ha la dimensione decisa quando lo si crea. Una struttura che cresce mentre il programma gira si costruisce a mano: ogni pezzo è una `struct` allocata sull'heap, e i pezzi sono collegati da puntatori. Il primo passo è quindi allocare una `struct` con `malloc`.
 
-In JavaScript oggetti e array crescono da soli e la memoria la libera il garbage collector. In C una struttura che cresce si costruisce a mano: ogni pezzo è una `struct` allocata con `malloc`, e i pezzi sono collegati da puntatori.
+== Puntatori a struct <puntatori-struct>
 
-Per prima cosa serve un puntatore a `struct`. Per esempio una pila (`Stack`, un array più un intero) allocata sull'heap:
+Una `struct` si alloca sull'heap come un `int` (@allocazione): `malloc(sizeof(tipo))` riserva i byte e restituisce un `void*`, che si converte con un casting. L'esempio del prof è una `struct` che chiama `Stack` (in inglese "pila"), fatta da un array di `N` interi e da un intero `n`:
 
-#grid(columns: (1fr, 1fr), gutter: 1em, align: horizon,
 ```c
+#define N 100
+
 typedef struct {
     int elements[N];
     int n;
@@ -2091,14 +2092,68 @@ typedef struct {
 
 Stack *s = (Stack*) malloc(sizeof(Stack));
 s->n = 0;
-```,
-[Ai campi si accede con l'operatore *`->`*: `s->n` è una scorciatoia per `(*s).n`, cioè "il campo `n` della `struct` puntata da `s`". Le parentesi servono perché `.` lega più di `*`: `*s.n` vorrebbe dire `*(s.n)`.
+/* ... */
+free(s);
+```
 
-`.` si usa su una `struct`, `->` su un *puntatore* a `struct`.])
+La riga con `malloc`, pezzo per pezzo:
+- `sizeof(Stack)` è la dimensione di tutta la `struct`: l'array, l'intero e l'eventuale padding. Qui 404 byte;
+- `(Stack*)` converte il `void*` di `malloc` in un puntatore a `Stack` (si può omettere, come in @matrici);
+- `s` è un *puntatore a `Stack`*: è una variabile locale, quindi sta sullo stack, e contiene solo un indirizzo. La `struct` vera sta sull'heap.
+
+Nel disegno, in verde ciò che sta sullo stack, nel riquadro tratteggiato l'heap, in blu i membri della `struct`.
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  let blu-cella = rgb("#dce8fb")
+  rect((0, 0), (0.9, 0.6), fill: rgb("#dff2e3"), stroke: 0.5pt)
+  content((0.45, 0.3), text(8pt)[`s`])
+  content((0.45, -0.3), text(7.5pt)[sullo stack])
+  rect((1.6, -0.5), (8.3, 1.3), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+  content((4.95, 1.55), text(7.5pt, fill: gray)[heap: la `struct` `Stack`])
+  line((0.9, 0.3), (1.9, 0.3), mark: (end: "stealth"), stroke: 0.6pt + red)
+  let celle = ("[0]", "[1]", "…", "[N-1]")
+  for (k, t) in celle.enumerate() {
+    rect((1.9 + k * 1.1, 0), (3.0 + k * 1.1, 0.6), fill: blu-cella, stroke: 0.5pt)
+    content((2.45 + k * 1.1, 0.3), text(7pt, raw(t)))
+  }
+  rect((6.6, 0), (7.6, 0.6), fill: blu-cella, stroke: 0.5pt)
+  content((4.1, 0.85), text(7.5pt)[`elements`])
+  content((7.1, 0.85), text(7.5pt)[`n`])
+}))
+
+#nota[`Stack` qui è solo un nome: questo `s` non c'entra con lo stack della memoria. La `struct` puntata sta sull'heap.]
+
+Per usare un membro bisogna prima seguire il puntatore, poi scegliere il membro. Il C ha un operatore apposta, *`->`*:
+
+#table(columns: (auto, auto, 1fr), align: (center, center, left),
+  [con `->`], [equivale a], [significato],
+  [`s->n`], [`(*s).n`], [il membro `n` della `struct` puntata da `s`],
+)
+
+Regola: `.` si usa su una `struct`, `->` su un *puntatore* a `struct`.
+
+#nota[*`*s.n` non funziona.* `.` lega più di `*`, quindi si legge `*(s.n)`; ma `s` non è una `struct` e il compilatore si ferma: `'s' is a pointer; did you mean to use '->'?`. Per questo nella forma lunga servono le parentesi, `(*s).n`.]
+
+`->` serve anche con un array di puntatori a `struct` (@matrici). Se `studenti` è uno `Studente **`, `studenti[i]` è un puntatore a `Studente` e `studenti[i]->matricola` è la sua matricola. Per leggerla con `scanf` serve il suo indirizzo: `&studenti[i]->matricola` vale `&(studenti[i]->matricola)`, perché `->` lega più di `&`.
 
 #esercizio[ordinare con merge sort][Allocare dinamicamente un array di puntatori a `struct Studente` (matricola ed età), leggere numero e dati degli studenti, ordinare l'array per matricola con Merge Sort e stamparlo, poi liberare tutta la memoria. Si ordinano i *puntatori*: `array[k] = L[i]` sposta un indirizzo, non la `struct`.]
 
-Una `struct` può contenere un puntatore a una `struct` del suo stesso tipo (*self-referential struct*). È quello che serve per una *lista concatenata*: ogni elemento contiene un valore e il riferimento all'elemento *successivo*; la lista si gestisce tenendo un puntatore al *primo* elemento, la testa (`head`). L'ultimo ha `next = NULL`.
+== Liste concatenate <liste>
+
+Una `struct` può contenere un puntatore a una `struct` del suo stesso tipo: si chiama *self-referential struct*. Su questo si basa la *lista concatenata*: ogni elemento (*nodo*) contiene un valore e l'indirizzo del nodo *successivo*. Della lista si tiene solo il puntatore al primo nodo, la *testa* (`head`). L'ultimo nodo ha `next = NULL`, che segna la fine.
+
+#let disegno-lista(voci, testa: "head") = canvas(length: 1cm, {
+  import draw: *
+  for (k, v) in voci.enumerate() {
+    let x = k * 2.2
+    rect((x, 0), (x + 0.8, 0.6), fill: rgb("#eef4ff"), stroke: 0.5pt)
+    content((x + 0.4, 0.3), text(9pt, v))
+    rect((x + 0.8, 0), (x + 1.6, 0.6), fill: rgb("#eef4ff"), stroke: 0.5pt)
+    if k < voci.len() - 1 { line((x + 1.2, 0.3), (x + 2.2, 0.3), mark: (end: "stealth")) } else { content((x + 1.2, 0.3), text(6.5pt)[`NULL`]) }
+  }
+  content((-0.5, 1.0), text(8pt, raw(testa))); line((-0.4, 0.85), (0.2, 0.62), mark: (end: "stealth"))
+})
 
 #grid(columns: (1fr, auto), gutter: 1.5em, align: horizon,
 ```c
@@ -2108,54 +2163,54 @@ struct n {
 };
 typedef struct n Node;
 ```,
-canvas(length: 1cm, {
-  import draw: *
-  for (k, v) in ("9", "10", "11").enumerate() {
-    let x = k * 2.2
-    rect((x, 0), (x + 0.8, 0.6), fill: rgb("#dff2e3")); content((x + 0.4, 0.3), text(9pt, v))
-    rect((x + 0.8, 0), (x + 1.6, 0.6), fill: rgb("#dff2e3"))
-    if k < 2 { line((x + 1.2, 0.3), (x + 2.2, 0.3), mark: (end: "stealth")) } else { content((x + 1.2, 0.3), text(6.5pt)[`NULL`]) }
-  }
-  content((-0.4, 1.0), text(8pt)[`head`]); line((-0.3, 0.85), (0.2, 0.62), mark: (end: "stealth"))
-  content((0.4, -0.3), text(6.5pt, fill: gray)[`val`]); content((1.2, -0.3), text(6.5pt, fill: gray)[`next`])
-}))
+[#disegno-lista(("9", "10", "11"))
+#text(7.5pt, fill: gray)[a sinistra `val`, a destra `next`]])
 
-Nella `struct` va scritto `struct n *next` e non `Node *next`, perché il nome `Node` nasce solo con il `typedef` dopo. L'esempio del prof costruisce questa lista con tre nodi locali e la stampa:
+Nel disegno ogni nodo è un rettangolo diviso in due, e le frecce sono i puntatori. Nella `struct` va scritto `struct n *next` e non `Node *next`: il nome `Node` nasce solo con il `typedef`, una riga dopo.
 
-#grid(columns: (1.2fr, 1fr), gutter: 1em, align: horizon,
+L'esempio del prof costruisce questa lista con tre nodi locali, mettendo il 10, poi l'11 in coda e il 9 in testa. A destra la lista dopo ogni passo:
+
+#grid(columns: (1.1fr, 1fr), gutter: 1em, align: horizon,
 ```c
-Node *head = NULL;           // lista vuota
+Node *head = NULL;      // lista vuota
 
 Node elem;
 elem.val = 10;
 elem.next = NULL;
-head = &elem;                // un elemento
+head = &elem;           // un nodo
 
-Node elem1;                  // in coda
+Node elem1;
 elem1.val = 11;
 elem1.next = NULL;
-elem.next = &elem1;
+elem.next = &elem1;     // in coda
 
-Node elem2;                  // in testa
+Node elem2;
 elem2.val = 9;
 elem2.next = head;
-head = &elem2;
+head = &elem2;          // in testa
 ```,
-[
+stack(spacing: 1.6em,
+  text(8pt)[`head = NULL`],
+  disegno-lista(("10",)),
+  disegno-lista(("10", "11")),
+  disegno-lista(("9", "10", "11")),
+))
+
+- *in coda*: l'ultimo nodo, che puntava a `NULL`, ora punta al nuovo;
+- *in testa*: il nuovo nodo punta alla vecchia testa, poi diventa lui la testa. L'ordine conta: con `head = &elem2` per primo, la vecchia testa andrebbe persa.
+
+Per scorrere la lista un puntatore `l` parte dalla testa e segue i `next` fino a `NULL`. È un `for` su un array in cui, al posto dell'indice, c'è un puntatore:
+
 ```c
 Node *l = head;
 while (l != NULL) {
     printf("%d ", l->val);
     l = l->next;
 }
-// 9 10 11
+// stampa: 9 10 11
 ```
-- *in testa*: il nuovo nodo punta alla vecchia testa, poi diventa la testa;
-- *in coda*: l'ultimo nodo, che puntava a `NULL`, punta al nuovo;
-- *scorrere*: un puntatore `l` parte dalla testa e segue `next` finché non trova `NULL`.
-])
 
-Con nodi locali la lista muore con la funzione. Una lista vera alloca ogni nodo con `malloc`. Nella soluzione del prof a un esercizio, ogni nodo è uno studente:
+Questi nodi però sono variabili locali: stanno sullo stack e spariscono quando la funzione finisce, quindi la lista non sopravvive alla funzione che la crea. Una lista vera alloca ogni nodo sull'heap con `malloc`, come la `struct` della sezione prima (@puntatori-struct). Così fa la soluzione del prof all'esercizio sulla lista di studenti, dove ogni nodo è uno studente e i nuovi si aggiungono in coda:
 
 ```c
 typedef struct Studente {
@@ -2170,14 +2225,24 @@ Studente* aggiungiStudente(Studente *head, int matricola, int eta) {
     nuovo->matricola = matricola;
     nuovo->eta = eta;
     nuovo->next = NULL;
-    if (head == NULL) return nuovo;      // lista vuota: diventa la testa
+    if (head == NULL) return nuovo;
     Studente *temp = head;
-    while (temp->next != NULL)           // cerco l'ultimo
+    while (temp->next != NULL)
         temp = temp->next;
     temp->next = nuovo;
     return head;
 }
+```
 
++ Alloca il nuovo nodo e ne riempie i membri. `next = NULL` perché sarà l'ultimo.
++ Se la lista è vuota (`head == NULL`), il nuovo nodo è tutta la lista: lo restituisce come testa.
++ Altrimenti `temp` parte dalla testa e avanza finché `temp->next` non è `NULL`, cioè fino all'ultimo nodo, e lì attacca il nuovo.
+
+La funzione *restituisce la testa*, e chi la chiama deve assegnarla: `head = aggiungiStudente(head, 1, 23);`. Serve perché al passo 2 la testa cambia, e la funzione ha solo una copia di `head` (passaggio per valore, @funzioni).
+
+Alla fine ogni nodo va liberato con `free`:
+
+```c
 void liberaLista(Studente *head) {
     Studente *temp;
     while (head != NULL) {
@@ -2188,37 +2253,47 @@ void liberaLista(Studente *head) {
 }
 ```
 
-Due punti non scontati:
-+ `aggiungiStudente` *restituisce la testa*, e chi la chiama assegna il risultato alla sua testa (`head = aggiungiStudente(head, …)`). Serve perché se la lista era vuota la testa cambia, e la funzione ha solo una copia di `head`.
-+ In `liberaLista` l'ordine conta: dopo `free(temp)` leggere `temp->next` sarebbe un uso dopo `free`.
+L'ordine conta: dopo `free(temp)` leggere `temp->next` sarebbe un uso dopo `free`. Per questo si avanza `head` prima di liberare.
 
-L'alternativa al valore restituito è il passaggio per indirizzo della testa, come in `swap`. Il `main` del prof lo fa con la funzione di test:
+Al posto del valore restituito si può passare l'*indirizzo* della testa, come in `swap` (@puntatori). Il prof lo fa per la funzione di test, chiamata dal `main`:
 
-#grid(columns: (1.5fr, 1fr), gutter: 1em, align: horizon,
 ```c
 void testLista(Studente **lista) {
-    *lista = aggiungiStudente(*lista,
-                              1, 23);
-    *lista = aggiungiStudente(*lista,
-                              2, 21);
-    stampaLista(*lista);
+    *lista = aggiungiStudente(*lista, 1, 23);
+    *lista = aggiungiStudente(*lista, 2, 21);
+    /* ... stampa, ordina, estrae ... */
+    liberaLista(*lista);
 }
 
 int main(void) {
     Studente *lista = NULL;
     testLista(&lista);
-    liberaLista(lista);
+    return 0;
 }
-```,
-[`lista` è un `Studente *`; il suo indirizzo `&lista` è uno `Studente **`. Dentro `testLista`, `*lista` *è* la variabile `lista` del `main`, quindi assegnarle una nuova testa cambia proprio quella.])
+```
+
+`lista` è uno `Studente *`, quindi il suo indirizzo `&lista` è uno `Studente **`. Dentro `testLista`, `*lista` è proprio la variabile `lista` del `main`: assegnarle una nuova testa cambia quella.
 
 #esercizio[lista di studenti][Completare il programma: `stampaLista`; `ordinaPerEta`, che ordina la lista per età crescente con un bubble sort che scambia i *valori* dei nodi (non i puntatori); `estraiPerEta`, che restituisce una *nuova* lista con gli studenti dell'età letta da tastiera. Alla fine liberare entrambe le liste.]
 
 == Alberi binari di ricerca <alberi>
 
-Lo stesso schema con *due* puntatori per nodo dà un albero binario. In un *albero binario di ricerca* ogni nodo ha a sinistra solo valori minori e a destra solo valori maggiori o uguali. Nell'esercizio del prof i nodi sono studenti ordinati per età: i più giovani a sinistra, i più anziani a destra. Inserimento, stampa e liberazione sono *ricorsivi*.
+La lista ha un puntatore per nodo. Con *due* puntatori, `left` e `right`, si ottiene un *albero binario*: ogni nodo ha al massimo due figli, uno a sinistra e uno a destra, e il nodo in cima si chiama *radice*. In un *albero binario di ricerca* i nodi sono in ordine: a sinistra di un nodo ci sono solo valori minori, a destra solo valori maggiori o uguali.
 
-#grid(columns: (1.6fr, 1fr), gutter: 1em, align: horizon,
+Nell'esercizio del prof i nodi sono studenti ordinati per età: i più giovani a sinistra, i più anziani a destra. Nel disegno ogni cerchio è un nodo con la sua età, e gli studenti sono stati inseriti nell'ordine 22, 20, 25, 21, 23:
+
+#align(center, canvas(length: 1cm, {
+  import draw: *
+  let nodo(p, t) = { circle(p, radius: 0.35, fill: rgb("#eef4ff")); content(p, text(8pt, t)) }
+  line((0, 0), (-1.2, -1.2)); line((0, 0), (1.2, -1.2))
+  line((-1.2, -1.2), (-0.6, -2.4)); line((1.2, -1.2), (0.6, -2.4))
+  nodo((0, 0), [22]); nodo((-1.2, -1.2), [20]); nodo((1.2, -1.2), [25])
+  nodo((-0.6, -2.4), [21]); nodo((0.6, -2.4), [23])
+  content((0.9, 0.3), text(7.5pt, fill: gray)[radice])
+}))
+
+Il nodo ha gli stessi membri della lista, ma con `left` e `right` al posto di `next`. `creaNodo` lo alloca e mette i due figli a `NULL`; se `malloc` fallisce, `exit(1)` termina il programma.
+
 ```c
 typedef struct Studente {
     int matricola;
@@ -2227,31 +2302,39 @@ typedef struct Studente {
     struct Studente *right;
 } Studente;
 
-Studente* inserisciStudente(Studente *radice,
-                            int matricola,
-                            int eta) {
-    if (radice == NULL)    // posto vuoto: qui
+Studente* creaNodo(int matricola, int eta) {
+    Studente *nuovo = (Studente *) malloc(sizeof(Studente));
+    if (nuovo == NULL) exit(1);
+    nuovo->matricola = matricola;
+    nuovo->eta = eta;
+    nuovo->left = NULL;
+    nuovo->right = NULL;
+    return nuovo;
+}
+```
+
+Per inserire si scende dalla radice: a sinistra se l'età è minore, a destra altrimenti, finché si trova un posto vuoto. La funzione è *ricorsiva*: ogni chiamata guarda un nodo e passa il lavoro al figlio giusto.
+
+```c
+Studente* inserisciStudente(Studente *radice, int matricola, int eta) {
+    if (radice == NULL)                  // posto vuoto: il nodo va qui
         return creaNodo(matricola, eta);
     if (eta < radice->eta)
-        radice->left = inserisciStudente(
-            radice->left, matricola, eta);
+        radice->left = inserisciStudente(radice->left, matricola, eta);
     else
-        radice->right = inserisciStudente(
-            radice->right, matricola, eta);
+        radice->right = inserisciStudente(radice->right, matricola, eta);
     return radice;
 }
-```,
-canvas(length: 1cm, {
-  import draw: *
-  let nodo(p, t) = { circle(p, radius: 0.35, fill: rgb("#eef4ff")); content(p, text(8pt, t)) }
-  line((0, 0), (-1.2, -1.2)); line((0, 0), (1.2, -1.2))
-  line((-1.2, -1.2), (-0.6, -2.4)); line((1.2, -1.2), (0.6, -2.4))
-  nodo((0, 0), [22]); nodo((-1.2, -1.2), [20]); nodo((1.2, -1.2), [25])
-  nodo((-0.6, -2.4), [21]); nodo((0.6, -2.4), [23])
-  content((0, -3.2), text(7.5pt, fill: gray)[inseriti: 22, 20, 25, 21, 23])
-}))
+```
 
-`creaNodo` alloca il nodo con `malloc` e mette `left` e `right` a `NULL`. Come per la lista, `inserisciStudente` restituisce la radice, che cambia solo quando l'albero è vuoto: si chiama `radice = inserisciStudente(radice, m, e);`. Nel disegno, 21 va a sinistra di 22 (è minore) e poi a destra di 20 (è maggiore).
+Nel disegno, l'inserimento di 21:
++ 21 < 22: si scende a sinistra, nel nodo 20;
++ 21 ≥ 20: si scende a destra, dove c'è `NULL`;
++ posto vuoto: `creaNodo` crea il nodo, e la chiamata sul nodo 20 lo attacca come suo `right`.
+
+Come per la lista, la funzione restituisce la radice, che cambia solo quando l'albero è vuoto. Si chiama quindi `radice = inserisciStudente(radice, m, e);`.
+
+Anche stampa e liberazione sono ricorsive:
 
 #grid(columns: (1fr, 1fr), gutter: 1em,
 ```c
@@ -2272,7 +2355,7 @@ void liberaAlbero(Studente *radice) {
 }
 ```)
 
-La visita *in ordine* (sinistra, nodo, destra) stampa le età in ordine crescente: 20, 21, 22, 23, 25. In `liberaAlbero` il nodo si libera *per ultimo*: liberato prima, i suoi `left` e `right` non si potrebbero più leggere.
+La visita *in ordine* stampa prima tutto il sottoalbero sinistro, poi il nodo, poi il destro. Siccome a sinistra stanno i più giovani, le età escono in ordine crescente: 20, 21, 22, 23, 25. In `liberaAlbero` invece il nodo si libera *per ultimo*: liberato prima, i suoi `left` e `right` non si potrebbero più leggere.
 
 #esercizio[albero di studenti][Leggere coppie matricola/età e inserirle nell'albero, fermandosi quando la matricola è 0. Stampare gli studenti in ordine di età, poi quelli di un'età letta da tastiera (`stampaEta`, ricorsiva), e liberare la memoria.]
 
@@ -2292,7 +2375,7 @@ La visita *in ordine* (sinistra, nodo, destra) stampa le età in ordine crescent
   [`p = &x;` / `*p = 5;`], [`p` punta a `x` / scrive 5 in `x`],
   [`a + i`, `*(a + i)`], [`&a[i]`, `a[i]` (avanza di `i` *elementi*)],
   [`int **m`], [puntatore a puntatore: array di righe, o indirizzo di un puntatore da modificare],
-  [`s->campo`], [`(*s).campo`],
+  [`s->membro`], [`(*s).membro`],
   [`void *`], [puntatore generico: casting prima di dereferenziare],
   [`int (*f)(int, int)`], [puntatore a funzione],
 )
